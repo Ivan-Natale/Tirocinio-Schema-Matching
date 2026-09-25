@@ -1,0 +1,10 @@
+attribute
+client_code
+given_name
+family_name
+email_address
+date_of_birth
+zip_code
+account_creation_date
+total_amount
+newsletter_opt_in

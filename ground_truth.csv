@@ -1,0 +1,8 @@
+attribute_a,attribute_b
+customer_id,client_code
+first_name,given_name
+last_name,family_name
+email,email_address
+birth_date,date_of_birth
+postal_code,zip_code
+total_spent,total_amount
