@@ -1,7 +1,7 @@
 import csv
 
 # Soglie da testare
-SOGLIE = [0.50]
+SOGLIE = [0.20, 0.30, 0.33, 0.50, 0.70]
 
 
 # Legge gli attributi di uno schema
