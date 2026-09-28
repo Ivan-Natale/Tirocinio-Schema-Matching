@@ -6,11 +6,30 @@ from functools import lru_cache
 SOGLIE = [0.20, 0.30, 0.33, 0.50, 0.70]
 
 
+# Dataset da analizzare
+DATASETS = [
+    {
+        "nome": "CUSTOMERS",
+        "schema_a": "schema_a.csv",
+        "schema_b": "schema_b.csv",
+        "ground_truth": "ground_truth.csv"
+    },
+    {
+        "nome": "EMPLOYEES",
+        "schema_a": "employees_schema_a.csv",
+        "schema_b": "employees_schema_b.csv",
+        "ground_truth": "employees_ground_truth.csv"
+    }
+]
+
+
 # Legge gli attributi di uno schema
 def leggi_schema(nome_file):
+
     attributi = []
 
     with open(nome_file, "r", encoding="utf-8-sig") as file:
+
         lettore = csv.DictReader(file)
 
         for riga in lettore:
@@ -21,12 +40,15 @@ def leggi_schema(nome_file):
 
 # Legge la ground truth
 def leggi_ground_truth(nome_file):
+
     corrispondenze = set()
 
     with open(nome_file, "r", encoding="utf-8-sig") as file:
+
         lettore = csv.DictReader(file)
 
         for riga in lettore:
+
             coppia = (
                 riga["attribute_a"],
                 riga["attribute_b"]
@@ -38,49 +60,44 @@ def leggi_ground_truth(nome_file):
 
 
 # Calcola la distanza di Levenshtein
-# usando una versione ricorsiva senza matrice
+# usando la ricorsione
 @lru_cache(maxsize=None)
 def distanza_levenshtein(a, b):
 
-    # Se la prima stringa è vuota,
-    # bisogna inserire tutti i caratteri della seconda
+    # Se la prima stringa è vuota
     if len(a) == 0:
         return len(b)
 
-    # Se la seconda stringa è vuota,
-    # bisogna cancellare tutti i caratteri della prima
+    # Se la seconda stringa è vuota
     if len(b) == 0:
         return len(a)
 
-    # Se il primo carattere è uguale,
-    # non serve fare nessuna modifica
+    # Se il primo carattere è uguale
     if a[0] == b[0]:
+
         return distanza_levenshtein(
             a[1:],
             b[1:]
         )
 
-    # Proviamo le tre possibili operazioni
+    # Proviamo le tre operazioni
 
-    # 1. Cancellazione di un carattere dalla prima stringa
     cancellazione = distanza_levenshtein(
         a[1:],
         b
     )
 
-    # 2. Inserimento di un carattere
     inserimento = distanza_levenshtein(
         a,
         b[1:]
     )
 
-    # 3. Sostituzione di un carattere
     sostituzione = distanza_levenshtein(
         a[1:],
         b[1:]
     )
 
-    # Scegliamo l'operazione che richiede meno modifiche
+    # Scegliamo l'operazione meno costosa
     return 1 + min(
         cancellazione,
         inserimento,
@@ -88,28 +105,22 @@ def distanza_levenshtein(a, b):
     )
 
 
-# Trasforma la distanza di Levenshtein
-# in una similarità compresa tra 0 e 1
+# Trasforma la distanza in similarità tra 0 e 1
 def similarita_levenshtein(a, b):
 
-    # Convertiamo tutto in minuscolo
     a = a.lower()
     b = b.lower()
 
-    # Calcoliamo la distanza
     distanza = distanza_levenshtein(a, b)
 
-    # Prendiamo la lunghezza della stringa più lunga
     lunghezza_massima = max(
         len(a),
         len(b)
     )
 
-    # Caso speciale: due stringhe vuote
     if lunghezza_massima == 0:
         return 1.0
 
-    # Conversione distanza -> similarità
     similarita = 1 - (
         distanza / lunghezza_massima
     )
@@ -117,156 +128,186 @@ def similarita_levenshtein(a, b):
     return similarita
 
 
-# Legge i file CSV
-schema_a = leggi_schema("schema_a.csv")
-schema_b = leggi_schema("schema_b.csv")
-ground_truth = leggi_ground_truth("ground_truth.csv")
+# Esegue Levenshtein su un dataset
+def esegui_dataset(
+    nome_dataset,
+    file_a,
+    file_b,
+    file_ground_truth
+):
 
-
-print("SCHEMA MATCHING - BASELINE LEVENSHTEIN")
-print()
-
-print("Attributi schema A:", len(schema_a))
-print("Attributi schema B:", len(schema_b))
-print(
-    "Corrispondenze nella ground truth:",
-    len(ground_truth)
-)
-
-
-# Prova tutte le soglie
-for soglia in SOGLIE:
-
-    # Per ogni soglia partiamo da un insieme vuoto
-    predizioni = set()
+    # Legge i file
+    schema_a = leggi_schema(file_a)
+    schema_b = leggi_schema(file_b)
+    ground_truth = leggi_ground_truth(
+        file_ground_truth
+    )
 
     print()
-    print("========================================")
-    print("SOGLIA:", soglia)
-    print("========================================")
+    print("##################################################")
+    print("DATASET:", nome_dataset)
+    print("##################################################")
 
-    # Confronta ogni attributo dello schema A
-    # con ogni attributo dello schema B
-    for attributo_a in schema_a:
+    print("Attributi schema A:", len(schema_a))
+    print("Attributi schema B:", len(schema_b))
+    print(
+        "Corrispondenze nella ground truth:",
+        len(ground_truth)
+    )
 
-        for attributo_b in schema_b:
 
-            similarita = similarita_levenshtein(
-                attributo_a,
-                attributo_b
-            )
+    # Prova tutte le soglie
+    for soglia in SOGLIE:
 
-            # Se la similarità supera la soglia,
-            # la coppia viene considerata una corrispondenza
-            if similarita >= soglia:
+        predizioni = set()
 
-                coppia = (
+        print()
+        print("========================================")
+        print("SOGLIA:", soglia)
+        print("========================================")
+
+
+        # Confronta tutti gli attributi
+        for attributo_a in schema_a:
+
+            for attributo_b in schema_b:
+
+                similarita = similarita_levenshtein(
                     attributo_a,
                     attributo_b
                 )
 
-                predizioni.add(coppia)
 
-                print(
-                    attributo_a,
-                    "<->",
-                    attributo_b,
-                    "similarità:",
-                    round(similarita, 4)
-                )
+                # Se supera la soglia
+                # viene considerato un match
+                if similarita >= soglia:
 
+                    coppia = (
+                        attributo_a,
+                        attributo_b
+                    )
 
-    # Calcolo dei True Positive
-    tp = len(
-        predizioni & ground_truth
-    )
+                    predizioni.add(coppia)
 
-    # Calcolo dei False Positive
-    fp = len(
-        predizioni - ground_truth
-    )
-
-    # Calcolo dei False Negative
-    fn = len(
-        ground_truth - predizioni
-    )
+                    print(
+                        attributo_a,
+                        "<->",
+                        attributo_b,
+                        "similarità:",
+                        round(similarita, 4)
+                    )
 
 
-    # Precision
-    if tp + fp > 0:
-        precision = tp / (tp + fp)
-    else:
-        precision = 0
-
-
-    # Recall
-    if tp + fn > 0:
-        recall = tp / (tp + fn)
-    else:
-        recall = 0
-
-
-    # F1-score
-    if precision + recall > 0:
-
-        f1 = (
-            2
-            * precision
-            * recall
-            / (precision + recall)
+        # True Positive
+        tp = len(
+            predizioni & ground_truth
         )
 
-    else:
-        f1 = 0
+
+        # False Positive
+        fp = len(
+            predizioni - ground_truth
+        )
 
 
-    # Stampa dei risultati
-    print()
-    print("RISULTATI SOGLIA", soglia)
-
-    print("TP:", tp)
-    print("FP:", fp)
-    print("FN:", fn)
-
-    print(
-        "Precision:",
-        round(precision, 4)
-    )
-
-    print(
-        "Recall:",
-        round(recall, 4)
-    )
-
-    print(
-        "F1-score:",
-        round(f1, 4)
-    )
+        # False Negative
+        fn = len(
+            ground_truth - predizioni
+        )
 
 
-    # Corrispondenze corrette
-    # che il programma non ha trovato
-    print()
-    print("CORRISPONDENZE NON INDIVIDUATE:")
+        # Precision
+        if tp + fp > 0:
+            precision = tp / (tp + fp)
+        else:
+            precision = 0
 
-    for coppia in ground_truth - predizioni:
+
+        # Recall
+        if tp + fn > 0:
+            recall = tp / (tp + fn)
+        else:
+            recall = 0
+
+
+        # F1-score
+        if precision + recall > 0:
+
+            f1 = (
+                2
+                * precision
+                * recall
+                / (precision + recall)
+            )
+
+        else:
+            f1 = 0
+
+
+        # Stampa risultati
+        print()
+        print(
+            "RISULTATI",
+            nome_dataset,
+            "- SOGLIA",
+            soglia
+        )
+
+        print("TP:", tp)
+        print("FP:", fp)
+        print("FN:", fn)
 
         print(
-            coppia[0],
-            "<->",
-            coppia[1]
+            "Precision:",
+            round(precision, 4)
         )
-
-
-    # Corrispondenze proposte dal programma
-    # ma non presenti nella ground truth
-    print()
-    print("CORRISPONDENZE ERRATE:")
-
-    for coppia in predizioni - ground_truth:
 
         print(
-            coppia[0],
-            "<->",
-            coppia[1]
+            "Recall:",
+            round(recall, 4)
         )
+
+        print(
+            "F1-score:",
+            round(f1, 4)
+        )
+
+
+        # False Negative
+        print()
+        print("CORRISPONDENZE NON INDIVIDUATE:")
+
+        for coppia in ground_truth - predizioni:
+
+            print(
+                coppia[0],
+                "<->",
+                coppia[1]
+            )
+
+
+        # False Positive
+        print()
+        print("CORRISPONDENZE ERRATE:")
+
+        for coppia in predizioni - ground_truth:
+
+            print(
+                coppia[0],
+                "<->",
+                coppia[1]
+            )
+
+
+print("SCHEMA MATCHING - BASELINE LEVENSHTEIN")
+
+
+# Esegue Levenshtein su entrambi i dataset
+for dataset in DATASETS:
+
+    esegui_dataset(
+        dataset["nome"],
+        dataset["schema_a"],
+        dataset["schema_b"],
+        dataset["ground_truth"]
+    )

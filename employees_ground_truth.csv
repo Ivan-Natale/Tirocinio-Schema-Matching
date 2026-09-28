@@ -1,0 +1,8 @@
+attribute_a,attribute_b
+emp_id,employee_number
+fname,first_name
+lname,last_name
+dept,department
+annual_salary,compensation
+hire_date,start_date
+office_loc,work_location

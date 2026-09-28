@@ -222,7 +222,118 @@ il nome degli attributi.
 Dopo l'arricchimento degli schemi, i risultati delle due baseline
 sono rimasti invariati.
 
+## Secondo dataset - Employees
 
+Per verificare se i risultati ottenuti sul primo dataset fossero
+dipendenti dalle caratteristiche specifiche dei nomi degli attributi,
+le due baseline sono state testate anche su una seconda coppia di schemi.
+
+Il secondo dataset riguarda attributi relativi ai dipendenti e contiene
+7 corrispondenze nella ground truth.
+
+Alcuni esempi sono:
+
+- `emp_id` ↔ `employee_number`
+- `fname` ↔ `first_name`
+- `lname` ↔ `last_name`
+- `dept` ↔ `department`
+- `annual_salary` ↔ `compensation`
+- `hire_date` ↔ `start_date`
+- `office_loc` ↔ `work_location`
+
+Anche su questo dataset sono state utilizzate le soglie:
+
+- 0.20
+- 0.30
+- 0.33
+- 0.50
+- 0.70
+
+### Risultati Jaccard - Employees
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+| 0.30 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+| 0.33 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+| 0.50 | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| 0.70 | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+
+Jaccard riesce a riconoscere soltanto:
+
+`hire_date` ↔ `start_date`
+
+perché i due nomi condividono il token `date`.
+
+Corrispondenze come `fname` ↔ `first_name` oppure
+`dept` ↔ `department` non vengono invece riconosciute,
+perché il metodo richiede la presenza di token esattamente uguali.
+
+Questo mostra un limite importante della baseline Jaccard
+in presenza di abbreviazioni.
+
+### Risultati Levenshtein - Employees
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 6 | 10 | 1 | 0.3750 | 0.8571 | 0.5217 |
+| 0.30 | 4 | 7 | 3 | 0.3636 | 0.5714 | 0.4444 |
+| 0.33 | 4 | 4 | 3 | 0.5000 | 0.5714 | 0.5333 |
+| 0.50 | 3 | 1 | 4 | 0.7500 | 0.4286 | 0.5455 |
+| 0.70 | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+
+Levenshtein riesce a riconoscere alcune abbreviazioni che Jaccard
+non individua, ad esempio:
+
+- `fname` ↔ `first_name`
+- `lname` ↔ `last_name`
+
+Tuttavia il confronto basato sui caratteri può generare anche
+corrispondenze errate.
+
+Un esempio osservato con soglia 0.50 è:
+
+`hire_date` ↔ `first_name`
+
+che ottiene una similarità sufficiente pur rappresentando concetti
+completamente differenti.
+
+Inoltre la corrispondenza:
+
+`annual_salary` ↔ `compensation`
+
+non viene individuata neanche da Levenshtein, perché i due nomi
+sono semanticamente collegati ma lessicalmente molto diversi.
+
+---
+
+## Confronto tra i due dataset
+
+Considerando il valore di F1 più alto osservato tra le soglie testate:
+
+| Dataset | Metodo | Soglia | Precision | Recall | F1-score |
+|---|---|---:|---:|---:|---:|
+| Customers | Jaccard | 0.33 | 0.6667 | 0.8571 | 0.7500 |
+| Customers | Levenshtein | 0.50 | 0.6000 | 0.4286 | 0.5000 |
+| Employees | Jaccard | 0.33 | 1.0000 | 0.1429 | 0.2500 |
+| Employees | Levenshtein | 0.50 | 0.7500 | 0.4286 | 0.5455 |
+
+I risultati mostrano che le prestazioni dei metodi lessicali
+dipendono dalle caratteristiche dei nomi degli attributi.
+
+Nel dataset Customers, Jaccard ottiene risultati migliori perché
+diverse corrispondenze condividono token completi.
+
+Nel dataset Employees, Levenshtein ottiene invece risultati migliori
+tra le configurazioni testate, perché riesce a riconoscere alcune
+abbreviazioni e variazioni a livello di caratteri.
+
+Nessuno dei due metodi riesce però a gestire in modo affidabile
+corrispondenze basate principalmente sul significato, come
+`annual_salary` ↔ `compensation`.
+
+Questa osservazione motiva il successivo studio di metodi
+di schema matching basati su rappresentazioni semantiche.
 
 ## File del progetto
 

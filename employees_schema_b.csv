@@ -1,0 +1,8 @@
+attribute,type,description,example_value
+employee_number,INTEGER,Identificativo univoco del dipendente,1001
+first_name,TEXT,Nome del dipendente,Mario
+last_name,TEXT,Cognome del dipendente,Rossi
+department,TEXT,Dipartimento del dipendente,IT
+compensation,FLOAT,Stipendio annuale del dipendente,35000
+start_date,DATE,Data di assunzione del dipendente,2023-05-10
+work_location,TEXT,Sede di lavoro del dipendente,Roma
