@@ -1,10 +1,10 @@
-attribute
-client_code
-given_name
-family_name
-email_address
-date_of_birth
-zip_code
-account_creation_date
-total_amount
-newsletter_opt_in
+attribute,type,description,example_value
+client_code,INTEGER,Identificativo univoco del cliente,1024
+given_name,TEXT,Nome del cliente,Mario
+family_name,TEXT,Cognome del cliente,Rossi
+email_address,TEXT,Indirizzo email del cliente,mario.rossi@example.com
+date_of_birth,DATE,Data di nascita del cliente,1998-04-12
+zip_code,TEXT,Codice postale dell'indirizzo del cliente,65121
+account_creation_date,DATE,Data di creazione di un account separato,2024-02-10
+total_amount,FLOAT,Spesa complessiva effettuata dal cliente,1250.50
+newsletter_opt_in,BOOLEAN,Indica se il cliente ha accettato la newsletter,true

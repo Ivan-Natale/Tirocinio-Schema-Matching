@@ -195,6 +195,35 @@ i nomi, mentre Levenshtein è penalizzato dal diverso ordine dei caratteri.
 
 ---
 
+## Arricchimento degli schemi
+
+Gli schemi iniziali contenevano soltanto il nome degli attributi.
+
+Successivamente sono state aggiunte tre informazioni:
+
+- tipo del dato;
+- descrizione dell'attributo;
+- valore di esempio.
+
+Le nuove informazioni permettono di analizzare meglio il significato
+degli attributi e di evidenziare casi in cui il solo nome non è sufficiente.
+
+Ad esempio:
+
+- `customer_id` e `client_code` hanno nomi molto diversi, ma descrizioni
+  che indicano entrambi un identificativo univoco del cliente;
+- `signup_date` e `account_creation_date` hanno entrambi tipo `DATE`,
+  ma le descrizioni indicano eventi differenti.
+
+Le baseline Jaccard e Levenshtein non utilizzano ancora queste
+informazioni aggiuntive e continuano a confrontare esclusivamente
+il nome degli attributi.
+
+Dopo l'arricchimento degli schemi, i risultati delle due baseline
+sono rimasti invariati.
+
+
+
 ## File del progetto
 
 - `baseline.py`: baseline basata sulla similarità di Jaccard.
