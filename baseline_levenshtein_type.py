@@ -1,0 +1,324 @@
+import csv
+from functools import lru_cache
+
+
+# Soglie da testare
+SOGLIE = [0.20, 0.30, 0.33, 0.50, 0.70]
+
+
+# Dataset da analizzare
+DATASETS = [
+    {
+        "nome": "CUSTOMERS",
+        "schema_a": "schema_a.csv",
+        "schema_b": "schema_b.csv",
+        "ground_truth": "ground_truth.csv"
+    },
+    {
+        "nome": "EMPLOYEES",
+        "schema_a": "employees_schema_a.csv",
+        "schema_b": "employees_schema_b.csv",
+        "ground_truth": "employees_ground_truth.csv"
+    }
+]
+
+
+# Legge nome e tipo degli attributi
+def leggi_schema(nome_file):
+
+    attributi = []
+
+    with open(nome_file, "r", encoding="utf-8-sig") as file:
+
+        lettore = csv.DictReader(file)
+
+        for riga in lettore:
+
+            attributo = {
+                "nome": riga["attribute"],
+                "tipo": riga["type"]
+            }
+
+            attributi.append(attributo)
+
+    return attributi
+
+
+# Legge la ground truth
+def leggi_ground_truth(nome_file):
+
+    corrispondenze = set()
+
+    with open(nome_file, "r", encoding="utf-8-sig") as file:
+
+        lettore = csv.DictReader(file)
+
+        for riga in lettore:
+
+            coppia = (
+                riga["attribute_a"],
+                riga["attribute_b"]
+            )
+
+            corrispondenze.add(coppia)
+
+    return corrispondenze
+
+
+# Distanza di Levenshtein ricorsiva
+@lru_cache(maxsize=None)
+def distanza_levenshtein(a, b):
+
+    if len(a) == 0:
+        return len(b)
+
+    if len(b) == 0:
+        return len(a)
+
+    if a[0] == b[0]:
+
+        return distanza_levenshtein(
+            a[1:],
+            b[1:]
+        )
+
+    cancellazione = distanza_levenshtein(
+        a[1:],
+        b
+    )
+
+    inserimento = distanza_levenshtein(
+        a,
+        b[1:]
+    )
+
+    sostituzione = distanza_levenshtein(
+        a[1:],
+        b[1:]
+    )
+
+    return 1 + min(
+        cancellazione,
+        inserimento,
+        sostituzione
+    )
+
+
+# Trasforma la distanza in similarità
+def similarita_levenshtein(a, b):
+
+    a = a.lower()
+    b = b.lower()
+
+    distanza = distanza_levenshtein(a, b)
+
+    lunghezza_massima = max(
+        len(a),
+        len(b)
+    )
+
+    if lunghezza_massima == 0:
+        return 1.0
+
+    similarita = 1 - (
+        distanza / lunghezza_massima
+    )
+
+    return similarita
+
+
+# Esegue l'esperimento
+def esegui_dataset(
+    nome_dataset,
+    file_a,
+    file_b,
+    file_ground_truth
+):
+
+    schema_a = leggi_schema(file_a)
+    schema_b = leggi_schema(file_b)
+    ground_truth = leggi_ground_truth(file_ground_truth)
+
+    print()
+    print("##################################################")
+    print("DATASET:", nome_dataset)
+    print("##################################################")
+
+    print("Attributi schema A:", len(schema_a))
+    print("Attributi schema B:", len(schema_b))
+    print(
+        "Corrispondenze nella ground truth:",
+        len(ground_truth)
+    )
+
+
+    for soglia in SOGLIE:
+
+        predizioni = set()
+        coppie_escluse_tipo = 0
+
+        print()
+        print("========================================")
+        print("SOGLIA:", soglia)
+        print("========================================")
+
+
+        for attributo_a in schema_a:
+
+            for attributo_b in schema_b:
+
+                nome_a = attributo_a["nome"]
+                nome_b = attributo_b["nome"]
+
+                tipo_a = attributo_a["tipo"]
+                tipo_b = attributo_b["tipo"]
+
+
+                # FILTRO SUL TIPO
+                if tipo_a != tipo_b:
+
+                    coppie_escluse_tipo += 1
+                    continue
+
+
+                # Solo se i tipi sono uguali
+                # calcoliamo Levenshtein
+                similarita = similarita_levenshtein(
+                    nome_a,
+                    nome_b
+                )
+
+
+                if similarita >= soglia:
+
+                    coppia = (
+                        nome_a,
+                        nome_b
+                    )
+
+                    predizioni.add(coppia)
+
+                    print(
+                        nome_a,
+                        "<->",
+                        nome_b,
+                        "tipo:",
+                        tipo_a,
+                        "similarità:",
+                        round(similarita, 4)
+                    )
+
+
+        # True Positive
+        tp = len(
+            predizioni & ground_truth
+        )
+
+        # False Positive
+        fp = len(
+            predizioni - ground_truth
+        )
+
+        # False Negative
+        fn = len(
+            ground_truth - predizioni
+        )
+
+
+        # Precision
+        if tp + fp > 0:
+            precision = tp / (tp + fp)
+        else:
+            precision = 0
+
+
+        # Recall
+        if tp + fn > 0:
+            recall = tp / (tp + fn)
+        else:
+            recall = 0
+
+
+        # F1-score
+        if precision + recall > 0:
+
+            f1 = (
+                2
+                * precision
+                * recall
+                / (precision + recall)
+            )
+
+        else:
+            f1 = 0
+
+
+        print()
+        print(
+            "RISULTATI",
+            nome_dataset,
+            "- SOGLIA",
+            soglia
+        )
+
+        print(
+            "Coppie escluse per tipo:",
+            coppie_escluse_tipo
+        )
+
+        print("TP:", tp)
+        print("FP:", fp)
+        print("FN:", fn)
+
+        print(
+            "Precision:",
+            round(precision, 4)
+        )
+
+        print(
+            "Recall:",
+            round(recall, 4)
+        )
+
+        print(
+            "F1-score:",
+            round(f1, 4)
+        )
+
+
+        print()
+        print("CORRISPONDENZE NON INDIVIDUATE:")
+
+        for coppia in ground_truth - predizioni:
+
+            print(
+                coppia[0],
+                "<->",
+                coppia[1]
+            )
+
+
+        print()
+        print("CORRISPONDENZE ERRATE:")
+
+        for coppia in predizioni - ground_truth:
+
+            print(
+                coppia[0],
+                "<->",
+                coppia[1]
+            )
+
+
+print("SCHEMA MATCHING - LEVENSHTEIN + FILTRO TIPO")
+
+
+# Esegue la baseline sui due dataset
+for dataset in DATASETS:
+
+    esegui_dataset(
+        dataset["nome"],
+        dataset["schema_a"],
+        dataset["schema_b"],
+        dataset["ground_truth"]
+    )
