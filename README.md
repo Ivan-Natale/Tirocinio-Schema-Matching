@@ -521,6 +521,163 @@ utilizzare anche informazioni semantiche, come le descrizioni
 degli attributi.
 
 
+
+## Baseline con nome e descrizione
+
+Dopo le configurazioni `name-only` e `nome + filtro sul tipo`,
+è stata aggiunta una terza configurazione che utilizza anche
+la descrizione degli attributi.
+
+Nome e descrizione vengono confrontati separatamente.
+
+Per ciascuna coppia vengono quindi calcolati:
+
+- uno score sul nome;
+- uno score sulla descrizione.
+
+I due valori vengono poi combinati utilizzando:
+
+score_finale = 0.70 * score_nome + 0.30 * score_descrizione
+
+Il nome mantiene quindi un peso maggiore rispetto alla descrizione.
+
+I pesi 0.70 e 0.30 sono stati fissati prima dell'analisi dei risultati
+e non sono stati modificati successivamente per adattarsi al test.
+
+I valori di esempio presenti negli schemi non vengono ancora utilizzati.
+
+---
+
+### Jaccard - Nome + descrizione - Customers
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 7 | 6 | 0 | 0.5385 | 1.0000 | 0.7000 |
+| 0.30 | 7 | 4 | 0 | 0.6364 | 1.0000 | 0.7778 |
+| 0.33 | 6 | 2 | 1 | 0.7500 | 0.8571 | 0.8000 |
+| 0.50 | 6 | 0 | 1 | 1.0000 | 0.8571 | 0.9231 |
+| 0.70 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+
+L'aggiunta della descrizione permette di recuperare corrispondenze
+che la baseline basata solo sul nome non riusciva a individuare.
+
+Un esempio significativo è:
+
+`customer_id` ↔ `client_code`
+
+Con Jaccard sui soli nomi la similarità è pari a 0, mentre le due
+descrizioni sono identiche. La similarità della descrizione è quindi
+pari a 1 e contribuisce ad aumentare lo score finale.
+
+Con soglia 0.50 vengono individuate 6 delle 7 corrispondenze corrette
+senza falsi positivi.
+
+---
+
+### Jaccard - Nome + descrizione - Employees
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 7 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
+| 0.30 | 7 | 0 | 0 | 1.0000 | 1.0000 | 1.0000 |
+| 0.33 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+| 0.50 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+| 0.70 | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+
+Su questo dataset la descrizione ha un impatto particolarmente forte.
+
+Corrispondenze come:
+
+`annual_salary` ↔ `compensation`
+
+non condividono token nel nome, ma presentano descrizioni identiche.
+
+Con score del nome pari a 0 e score della descrizione pari a 1,
+lo score finale diventa:
+
+0.70 * 0 + 0.30 * 1 = 0.30
+
+Questo spiega perché la coppia viene individuata con soglia 0.30,
+ma non con soglia 0.33.
+
+I risultati molto elevati devono però essere interpretati con cautela:
+nel dataset Employees molte coppie corrette hanno descrizioni
+esattamente identiche. Il test è quindi particolarmente favorevole
+alla componente basata sulla descrizione e potrebbe non rappresentare
+la difficoltà di uno scenario reale.
+
+---
+
+### Levenshtein - Nome + descrizione - Customers
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 7 | 56 | 0 | 0.1111 | 1.0000 | 0.2000 |
+| 0.30 | 7 | 21 | 0 | 0.2500 | 1.0000 | 0.4000 |
+| 0.33 | 7 | 15 | 0 | 0.3182 | 1.0000 | 0.4828 |
+| 0.50 | 5 | 2 | 2 | 0.7143 | 0.7143 | 0.7143 |
+| 0.70 | 2 | 0 | 5 | 1.0000 | 0.2857 | 0.4444 |
+
+Levenshtein applicato alle descrizioni riesce a recuperare alcune
+corrispondenze grazie alla somiglianza dei testi, ma a soglie basse
+produce molti falsi positivi.
+
+Questo avviene perché descrizioni relative a concetti differenti
+possono comunque condividere numerosi caratteri o parti della frase.
+
+---
+
+### Levenshtein - Nome + descrizione - Employees
+
+| Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|-------:|---:|---:|---:|----------:|-------:|---------:|
+| 0.20 | 7 | 39 | 0 | 0.1522 | 1.0000 | 0.2642 |
+| 0.30 | 7 | 14 | 0 | 0.3333 | 1.0000 | 0.5000 |
+| 0.33 | 7 | 10 | 0 | 0.4118 | 1.0000 | 0.5833 |
+| 0.50 | 4 | 3 | 3 | 0.5714 | 0.5714 | 0.5714 |
+| 0.70 | 1 | 0 | 6 | 1.0000 | 0.1429 | 0.2500 |
+
+La descrizione permette a Levenshtein di recuperare anche
+corrispondenze difficili come:
+
+`annual_salary` ↔ `compensation`
+
+Tuttavia continuano a comparire falsi positivi dovuti alla somiglianza
+ortografica tra descrizioni relative a concetti differenti.
+
+---
+
+## Confronto delle tre configurazioni
+
+Le tre configurazioni analizzate sono:
+
+`name-only`
+
+`nome + filtro sul tipo`
+
+`nome + descrizione`
+
+Il filtro sul tipo agisce principalmente eliminando coppie
+incompatibili e quindi riducendo i falsi positivi.
+
+La descrizione, invece, può fornire anche un'evidenza positiva
+e permettere di recuperare corrispondenze che il solo nome non
+riesce a individuare.
+
+I risultati mostrano però che l'efficacia della descrizione dipende
+fortemente dalla qualità e dalla formulazione del testo disponibile.
+
+In particolare, descrizioni identiche rendono il problema molto più
+semplice rispetto a descrizioni semanticamente equivalenti ma scritte
+in modi differenti.
+
+Questo aspetto dovrà essere considerato nell'interpretazione finale
+dei risultati e motiva il successivo studio di tecniche semantiche
+più avanzate.
+
+
+
+
 ## File del progetto
 
 - `baseline.py`: baseline basata sulla similarità di Jaccard.
@@ -535,6 +692,10 @@ degli attributi.
 - `baseline_levenshtein_type.py`: variante Levenshtein con filtro preliminare sui tipi.
 - `risultati_jaccard_type.csv`: risultati di Jaccard con filtro sui tipi.
 - `risultati_levenshtein_type.csv`: risultati di Levenshtein con filtro sui tipi.
+- `baseline_jaccard_description.py`: Jaccard su nome e descrizione.
+- `baseline_levenshtein_description.py`: Levenshtein su nome e descrizione.
+- `risultati_jaccard_description.csv`: risultati della configurazione Jaccard con descrizioni.
+- `risultati_levenshtein_description.csv`: risultati della configurazione Levenshtein con descrizioni.
 
 ---
 
@@ -569,3 +730,18 @@ py baseline_jaccard_type.py
 Per eseguire Levenshtein con filtro sui tipi:
 ``` bash
 py baseline_levenshtein_type.py
+
+
+
+Per eseguire Jaccard con nome e descrizione:
+
+```bash
+py baseline_jaccard_description.py
+
+
+
+
+Per eseguire Levenshtein con nome e descrizione:
+
+```bash
+py baseline_levenshtein_description.py
