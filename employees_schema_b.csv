@@ -1,8 +1,11 @@
 attribute,type,description,example_value
-employee_number,INTEGER,Identificativo univoco del dipendente,1001
-first_name,TEXT,Nome del dipendente,Mario
-last_name,TEXT,Cognome del dipendente,Rossi
-department,TEXT,Dipartimento del dipendente,IT
-compensation,FLOAT,Stipendio annuale del dipendente,35000
-start_date,DATE,Data di assunzione del dipendente,2023-05-10
-work_location,TEXT,Sede di lavoro del dipendente,Roma
+employee_number,INTEGER,Numero identificativo usato per distinguere ogni membro del personale,1001
+first_name,TEXT,Primo nome riportato nell'anagrafica del personale,Mario
+last_name,TEXT,Cognome presente nei dati personali del dipendente,Rossi
+department,TEXT,Area organizzativa alla quale appartiene il lavoratore,IT
+compensation,FLOAT,Importo della retribuzione complessiva riferita a un anno,35000
+start_date,DATE,Data di inizio del rapporto lavorativo,2023-05-10
+work_location,TEXT,Luogo di lavoro previsto per il membro del personale,Roma
+office_city,TEXT,Città in cui si trova l'ufficio aziendale,Roma
+monthly_salary,FLOAT,Compenso economico previsto per un singolo mese,2900
+employment_status,TEXT,Stato corrente del rapporto con l'azienda,active

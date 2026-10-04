@@ -676,6 +676,151 @@ dei risultati e motiva il successivo studio di tecniche semantiche
 più avanzate.
 
 
+## Vecchia sperimentazione con nome e descrizione
+
+In una prima fase è stata introdotta una configurazione che combina
+la similarità del nome e della descrizione degli attributi.
+
+Per ogni coppia vengono calcolati separatamente:
+
+- uno score sul nome;
+- uno score sulla descrizione.
+
+I due punteggi vengono combinati tramite:
+
+score_finale = 0.70 * score_nome + 0.30 * score_descrizione
+
+In questa prima versione, diverse coppie corrette presentavano descrizioni
+identiche o molto simili.
+
+Questo ha prodotto risultati particolarmente elevati, soprattutto sul
+dataset EMPLOYEES.
+
+Ad esempio, alcune coppie come:
+
+`annual_salary` ↔ `compensation`
+
+avevano descrizioni esattamente uguali.
+
+Questa prima sperimentazione è stata mantenuta nel repository perché
+rappresenta una fase del percorso di sviluppo, ma i risultati non devono
+essere considerati come valutazione finale del metodo.
+
+I risultati completi di questa prima versione sono riportati nei file:
+
+- `risultati_jaccard_description.csv`
+- `risultati_levenshtein_description.csv`
+
+
+## Revisione con descrizioni più realistiche
+
+Dopo una revisione metodologica, le descrizioni dei due schemi sono state
+riscritte in modo indipendente.
+
+Le descrizioni delle coppie corrette rimangono semanticamente equivalenti,
+ma non sono più copie dello stesso testo.
+
+Ad esempio:
+
+`annual_salary`
+
+> Retribuzione lorda prevista su base annua
+
+`compensation`
+
+> Importo della retribuzione complessiva riferita a un anno
+
+Questa modifica rende l'esperimento più realistico perché il matcher non
+può più basarsi semplicemente sulla presenza di descrizioni identiche.
+
+
+### Attributi senza corrispondenza e casi ambigui
+
+Il dataset EMPLOYEES è stato ampliato da 7 a 10 attributi per schema.
+
+La ground truth continua a contenere 7 corrispondenze corrette, mentre
+sono stati aggiunti attributi senza corrispondenza.
+
+Alcuni casi sono stati scelti volutamente per essere semanticamente vicini
+ma non equivalenti, ad esempio:
+
+`annual_salary` ↔ `monthly_salary`
+
+`office_loc` ↔ `office_city`
+
+`home_city` ↔ `office_city`
+
+`contract_type` ↔ `employment_status`
+
+Questi casi permettono di valutare non soltanto la capacità del matcher
+di trovare corrispondenze corrette, ma anche la capacità di evitare
+corrispondenze tra concetti simili ma differenti.
+
+
+## Selezione dei parametri e valutazione finale
+
+Per evitare di scegliere i parametri direttamente sul dataset di test,
+i due dataset sono stati utilizzati con ruoli differenti.
+
+`CUSTOMERS` è stato utilizzato come development set.
+
+`EMPLOYEES` è stato utilizzato come test set finale.
+
+Il procedimento seguito è stato:
+
+CUSTOMERS
+→ selezione dei parametri
+→ parametri bloccati
+→ EMPLOYEES
+→ valutazione finale
+
+Una volta osservati i risultati su EMPLOYEES, i parametri non sono stati
+modificati.
+
+### Parametri selezionati su CUSTOMERS
+
+| Algoritmo | Peso nome | Peso descrizione | Soglia | Precision | Recall | F1-score |
+|---|---:|---:|---:|---:|---:|---:|
+| Jaccard | 0.80 | 0.20 | 0.30 | 0.7500 | 0.8571 | 0.8000 |
+| Levenshtein | 0.80 | 0.20 | 0.50 | 0.7500 | 0.4286 | 0.5455 |
+
+### Valutazione finale su EMPLOYEES
+
+| Algoritmo | Peso nome | Peso descrizione | Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Jaccard | 0.80 | 0.20 | 0.30 | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| Levenshtein | 0.80 | 0.20 | 0.50 | 2 | 3 | 5 | 0.4000 | 0.2857 | 0.3333 |
+
+
+### Analisi della revisione
+
+Con le descrizioni più realistiche, Jaccard non individua nessuna
+corrispondenza sul test set.
+
+Questo mostra che la versione precedente era favorita dalla presenza
+di descrizioni identiche e che Jaccard ha difficoltà quando le stesse
+informazioni vengono espresse con parole differenti.
+
+Levenshtein riesce invece a individuare alcune corrispondenze corrette,
+come:
+
+`lname` ↔ `last_name`
+
+`hire_date` ↔ `start_date`
+
+ma produce anche falsi positivi come:
+
+`annual_salary` ↔ `monthly_salary`
+
+`office_loc` ↔ `office_city`
+
+`home_city` ↔ `office_city`
+
+Questi errori mostrano che una forte similarità lessicale o ortografica
+non implica necessariamente una corrispondenza semantica.
+
+I risultati della revisione sono considerati quelli di riferimento per
+la valutazione finale della configurazione basata su nome e descrizione.
 
 
 ## File del progetto
@@ -696,6 +841,10 @@ più avanzate.
 - `baseline_levenshtein_description.py`: Levenshtein su nome e descrizione.
 - `risultati_jaccard_description.csv`: risultati della configurazione Jaccard con descrizioni.
 - `risultati_levenshtein_description.csv`: risultati della configurazione Levenshtein con descrizioni.
+- `selezione_parametri_description.py`: selezione di pesi e soglie sul development set CUSTOMERS.
+- `selezione_parametri_description.csv`: risultati delle configurazioni provate durante la selezione dei parametri.
+- `valutazione_finale_description.py`: valutazione con parametri bloccati sul test set EMPLOYEES.
+- `valutazione_finale_description.csv`: risultati finali della valutazione su EMPLOYEES.
 
 ---
 
@@ -745,3 +894,16 @@ Per eseguire Levenshtein con nome e descrizione:
 
 ```bash
 py baseline_levenshtein_description.py
+
+
+### Selezione dei parametri sul development set
+
+```bash
+py selezione_parametri_description.py
+
+
+
+### Valutazione dei parametri sul test set
+
+```bash
+py valutazione_finale_description.py

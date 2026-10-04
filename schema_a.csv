@@ -1,10 +1,10 @@
 attribute,type,description,example_value
-customer_id,INTEGER,Identificativo univoco del cliente,1024
-first_name,TEXT,Nome del cliente,Mario
-last_name,TEXT,Cognome del cliente,Rossi
-email,TEXT,Indirizzo email del cliente,mario.rossi@example.com
-birth_date,DATE,Data di nascita del cliente,1998-04-12
-postal_code,TEXT,Codice postale dell'indirizzo del cliente,65121
-signup_date,DATE,Data di registrazione del cliente al servizio,2024-01-15
-total_spent,FLOAT,Spesa complessiva effettuata dal cliente,1250.50
-internal_notes,TEXT,Note interne relative al cliente,Cliente premium
+customer_id,INTEGER,Codice interno che identifica in modo univoco ciascun cliente,1024
+first_name,TEXT,Nome anagrafico del cliente,Mario
+last_name,TEXT,Cognome registrato per il cliente,Rossi
+email,TEXT,Recapito di posta elettronica utilizzato dal cliente,mario.rossi@example.com
+birth_date,DATE,Giorno di nascita della persona registrata,1998-04-12
+postal_code,TEXT,CAP associato all'indirizzo di residenza del cliente,65121
+signup_date,DATE,Data in cui il cliente si è registrato al servizio,2024-01-15
+total_spent,FLOAT,Somma complessiva degli acquisti effettuati dal cliente,1250.50
+internal_notes,TEXT,Annotazioni ad uso interno relative al cliente,Cliente premium

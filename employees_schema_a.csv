@@ -1,8 +1,11 @@
 attribute,type,description,example_value
-emp_id,INTEGER,Identificativo univoco del dipendente,1001
-fname,TEXT,Nome del dipendente,Mario
-lname,TEXT,Cognome del dipendente,Rossi
-dept,TEXT,Dipartimento del dipendente,IT
-annual_salary,FLOAT,Stipendio annuale del dipendente,35000
-hire_date,DATE,Data di assunzione del dipendente,2023-05-10
-office_loc,TEXT,Sede di lavoro del dipendente,Roma
+emp_id,INTEGER,Codice numerico assegnato a ciascun dipendente,1001
+fname,TEXT,Nome anagrafico del lavoratore,Mario
+lname,TEXT,Cognome registrato per il lavoratore,Rossi
+dept,TEXT,Reparto aziendale in cui opera il dipendente,IT
+annual_salary,FLOAT,Retribuzione lorda prevista su base annua,35000
+hire_date,DATE,Giorno in cui il dipendente è stato assunto,2023-05-10
+office_loc,TEXT,Sede aziendale a cui il dipendente è assegnato,Roma
+home_city,TEXT,Città di residenza dichiarata dal dipendente,Pescara
+bonus_amount,FLOAT,Premio economico aggiuntivo riconosciuto al dipendente,1500
+contract_type,TEXT,Tipologia contrattuale del rapporto di lavoro,tempo_indeterminato
