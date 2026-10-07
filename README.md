@@ -823,6 +823,218 @@ I risultati della revisione sono considerati quelli di riferimento per
 la valutazione finale della configurazione basata su nome e descrizione.
 
 
+## Confronto finale delle baseline lessicali
+
+Dopo la revisione metodologica dei dataset, è stato completato un confronto sistematico tra quattro configurazioni lessicali:
+
+- solo nome;
+- sola descrizione;
+- nome + descrizione;
+- nome + filtro sul tipo.
+
+Il confronto è stato eseguito sia con Jaccard sia con Levenshtein.
+
+Per mantenere separata la fase di sviluppo dalla valutazione finale, è stato utilizzato il seguente protocollo:
+
+`CUSTOMERS` → selezione dei parametri  
+`EMPLOYEES` → valutazione finale con parametri bloccati
+
+Le soglie e, nel caso della configurazione nome + descrizione, anche i pesi sono stati selezionati esclusivamente sul dataset `CUSTOMERS`.
+
+Una volta scelti, i parametri non sono stati modificati dopo aver osservato i risultati su `EMPLOYEES`.
+
+---
+
+### Configurazioni analizzate
+
+#### Solo nome
+
+La similarità viene calcolata utilizzando esclusivamente il nome degli attributi.
+
+Esempi:
+
+`first_name` ↔ `given_name`
+
+`annual_salary` ↔ `compensation`
+
+Questa configurazione rappresenta la baseline lessicale più semplice.
+
+#### Sola descrizione
+
+La similarità viene calcolata utilizzando esclusivamente la descrizione testuale associata all'attributo.
+
+Le descrizioni dei due schemi sono state scritte in modo indipendente e possono quindi rappresentare lo stesso concetto utilizzando parole differenti.
+
+#### Nome + descrizione
+
+Nome e descrizione vengono confrontati separatamente e i due punteggi vengono combinati tramite una media pesata.
+
+Sono state considerate tre combinazioni di pesi:
+
+- 0.80 nome + 0.20 descrizione;
+- 0.70 nome + 0.30 descrizione;
+- 0.60 nome + 0.40 descrizione.
+
+#### Nome + filtro sul tipo
+
+La similarità viene calcolata sul nome, ma vengono escluse prima del confronto le coppie con tipi differenti.
+
+Il filtro utilizzato è rigido:
+
+```python
+if tipo_a != tipo_b:
+    continue
+
+## Selezione dei parametri su CUSTOMERS
+
+Per ogni configurazione sono state testate le seguenti soglie:
+
+`0.20`, `0.30`, `0.33`, `0.50`, `0.70`
+
+La scelta della configurazione migliore è stata effettuata utilizzando il seguente criterio:
+
+1. F1-score più alto;
+2. in caso di parità, precision più alta;
+3. per la configurazione `nome + descrizione`, in caso di ulteriore parità, peso maggiore assegnato al nome;
+4. se necessario, soglia più alta.
+
+I risultati completi della fase di selezione sono salvati nel file:
+
+`selezione_parametri_lessicali.csv`
+
+I parametri scelti sono invece salvati nel file:
+
+`parametri_lessicali_selezionati.csv`
+
+### Parametri selezionati
+
+| Algoritmo | Configurazione | Soglia | Peso nome | Peso descrizione | F1 su CUSTOMERS |
+|---|---|---:|---:|---:|---:|
+| Jaccard | Solo nome | 0.33 | - | - | 0.7500 |
+| Jaccard | Sola descrizione | 0.20 | - | - | 0.4211 |
+| Jaccard | Nome + descrizione | 0.30 | 0.80 | 0.20 | 0.8000 |
+| Jaccard | Nome + filtro tipo | 0.33 | - | - | 0.8000 |
+| Levenshtein | Solo nome | 0.50 | - | - | 0.5000 |
+| Levenshtein | Sola descrizione | 0.50 | - | - | 0.4000 |
+| Levenshtein | Nome + descrizione | 0.50 | 0.80 | 0.20 | 0.5455 |
+| Levenshtein | Nome + filtro tipo | 0.33 | - | - | 0.6250 |
+
+---
+
+## Valutazione finale su EMPLOYEES
+
+Dopo la selezione su `CUSTOMERS`, i parametri sono stati bloccati e applicati senza ulteriori modifiche al dataset `EMPLOYEES`.
+
+Il dataset di test contiene:
+
+- 10 attributi nello schema A;
+- 10 attributi nello schema B;
+- 7 corrispondenze nella ground truth.
+
+### Risultati finali
+
+| Algoritmo | Configurazione | TP | FP | FN | Precision | Recall | F1-score |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Jaccard | Solo nome | 1 | 3 | 6 | 0.2500 | 0.1429 | 0.1818 |
+| Jaccard | Sola descrizione | 1 | 5 | 6 | 0.1667 | 0.1429 | 0.1538 |
+| Jaccard | Nome + descrizione | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| Jaccard | Nome + filtro tipo | 1 | 3 | 6 | 0.2500 | 0.1429 | 0.1818 |
+| Levenshtein | Solo nome | 3 | 4 | 4 | 0.4286 | 0.4286 | 0.4286 |
+| Levenshtein | Sola descrizione | 0 | 0 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| Levenshtein | Nome + descrizione | 2 | 3 | 5 | 0.4000 | 0.2857 | 0.3333 |
+| Levenshtein | Nome + filtro tipo | 4 | 5 | 3 | 0.4444 | 0.5714 | 0.5000 |
+
+La configurazione lessicale con il miglior risultato finale è:
+
+`Levenshtein + nome + filtro sul tipo`
+
+con:
+
+- **Precision = 0.4444**
+- **Recall = 0.5714**
+- **F1-score = 0.5000**
+
+---
+
+## Analisi dei risultati
+
+Il confronto finale mostra che l'aggiunta di informazioni non produce automaticamente un miglioramento.
+
+### Jaccard
+
+Con Jaccard, la configurazione `solo nome` e quella `nome + filtro sul tipo` producono lo stesso risultato finale.
+
+I principali falsi positivi sono:
+
+- `annual_salary` ↔ `monthly_salary`
+- `home_city` ↔ `office_city`
+- `office_loc` ↔ `office_city`
+
+Queste coppie hanno tipi compatibili e quindi il filtro sul tipo non può eliminarle.
+
+Ho osservato quindi che il tipo è utile solo quando l'errore coinvolge attributi strutturalmente incompatibili, ma non risolve ambiguità tra attributi dello stesso tipo.
+
+La configurazione `nome + descrizione` ottiene invece un F1-score pari a `0`.
+
+Questo risultato mostra che Jaccard ha difficoltà quando nomi e descrizioni semanticamente equivalenti utilizzano parole differenti.
+
+### Levenshtein
+
+Levenshtein applicato al solo nome ottiene un F1-score pari a:
+
+`0.4286`
+
+La configurazione con filtro sul tipo migliora il risultato fino a:
+
+`0.5000`
+
+Le corrispondenze corrette individuate sono:
+
+- `dept` ↔ `department`
+- `fname` ↔ `first_name`
+- `hire_date` ↔ `start_date`
+- `lname` ↔ `last_name`
+
+Il filtro sul tipo riesce quindi a ridurre parte del rumore prodotto dalla similarità ortografica.
+
+Rimangono comunque alcuni falsi positivi, ad esempio:
+
+- `annual_salary` ↔ `monthly_salary`
+- `home_city` ↔ `office_city`
+- `office_loc` ↔ `office_city`
+
+Questi casi mostrano un limite importante dell'approccio: attributi semanticamente differenti possono risultare molto simili a livello lessicale e avere anche lo stesso tipo.
+
+---
+
+## Considerazioni personali
+
+Da questo confronto ho osservato che la configurazione che generalizza meglio non è necessariamente quella che ottiene il miglior risultato sul development set.
+
+La configurazione:
+
+`Levenshtein + nome + filtro tipo`
+
+non aveva il miglior F1-score assoluto su `CUSTOMERS`, ma risulta la migliore su `EMPLOYEES`.
+
+Questo conferma l'importanza di mantenere separati development set e test set.
+
+Un altro risultato che considero particolarmente importante riguarda le descrizioni.
+
+Dopo averle rese più realistiche, il loro utilizzo con semplici metriche lessicali non ha prodotto un miglioramento generale.
+
+In alcuni casi ha addirittura ridotto le prestazioni rispetto all'utilizzo del solo nome.
+
+Questo mi ha fatto capire che aggiungere più informazione non significa automaticamente migliorare il matcher: è necessario anche utilizzare una tecnica di similarità adatta al tipo di informazione utilizzata.
+
+Gli errori osservati mostrano inoltre due limiti opposti delle baseline lessicali:
+
+- attributi semanticamente equivalenti possono essere molto diversi lessicalmente, ad esempio `annual_salary` ↔ `compensation`;
+- attributi semanticamente differenti possono essere molto simili lessicalmente, ad esempio `annual_salary` ↔ `monthly_salary`.
+
+Queste osservazioni motivano il passaggio successivo verso una baseline semantica basata su embeddings.
+
+
 ## File del progetto
 
 - `baseline.py`: baseline basata sulla similarità di Jaccard.
@@ -845,6 +1057,12 @@ la valutazione finale della configurazione basata su nome e descrizione.
 - `selezione_parametri_description.csv`: risultati delle configurazioni provate durante la selezione dei parametri.
 - `valutazione_finale_description.py`: valutazione con parametri bloccati sul test set EMPLOYEES.
 - `valutazione_finale_description.csv`: risultati finali della valutazione su EMPLOYEES.
+- selezione_parametri_lessicali.py: selezione delle soglie e dei parametri sul development set CUSTOMERS;
+- selezione_parametri_lessicali.csv: risultati completi della fase di selezione;
+- parametri_lessicali_selezionati.csv: parametri scelti per ogni configurazione;
+- valutazione_finale_lessicale.py: valutazione finale con parametri bloccati su EMPLOYEES;
+- valutazione_finale_lessicale.csv: tabella riassuntiva dei risultati finali;
+- dettagli_valutazione_lessicale.csv: dettaglio delle coppie predette, con score ed esito.
 
 ---
 
@@ -907,3 +1125,14 @@ py selezione_parametri_description.py
 
 ```bash
 py valutazione_finale_description.py
+
+
+
+Selezione dei parametri sul development set
+
+py selezione_parametri_lessicali.py
+
+
+Valutazione finale sul test set
+
+py valutazione_finale_lessicale.py

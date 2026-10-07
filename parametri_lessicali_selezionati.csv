@@ -1,0 +1,9 @@
+algoritmo,configurazione,peso_nome,peso_descrizione,soglia,tp,fp,fn,precision,recall,f1_score,coppie_escluse_tipo
+JACCARD,solo_nome,,,0.33,6,3,1,0.6667,0.8571,0.75,0
+JACCARD,sola_descrizione,,,0.2,4,8,3,0.3333,0.5714,0.4211,0
+JACCARD,nome_descrizione,0.8,0.2,0.3,6,2,1,0.75,0.8571,0.8,0
+JACCARD,nome_filtro_tipo,,,0.33,6,2,1,0.75,0.8571,0.8,55
+LEVENSHTEIN,solo_nome,,,0.5,3,2,4,0.6,0.4286,0.5,0
+LEVENSHTEIN,sola_descrizione,,,0.5,2,1,5,0.6667,0.2857,0.4,0
+LEVENSHTEIN,nome_descrizione,0.8,0.2,0.5,3,1,4,0.75,0.4286,0.5455,0
+LEVENSHTEIN,nome_filtro_tipo,,,0.33,5,4,2,0.5556,0.7143,0.625,55
