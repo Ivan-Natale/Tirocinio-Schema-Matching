@@ -884,6 +884,7 @@ Il filtro utilizzato è rigido:
 ```python
 if tipo_a != tipo_b:
     continue
+  ```
 
 ## Selezione dei parametri su CUSTOMERS
 
@@ -1033,6 +1034,274 @@ Gli errori osservati mostrano inoltre due limiti opposti delle baseline lessical
 - attributi semanticamente differenti possono essere molto simili lessicalmente, ad esempio `annual_salary` ↔ `monthly_salary`.
 
 Queste osservazioni motivano il passaggio successivo verso una baseline semantica basata su embeddings.
+
+
+## Baseline semantica con embeddings
+
+Dopo il confronto tra le baseline lessicali, è stata implementata una prima baseline semantica basata su embeddings.
+
+È stato utilizzato il modello pre-addestrato:
+
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+
+Il modello trasforma ogni testo in un vettore numerico di 384 dimensioni.
+
+La similarità tra due attributi viene calcolata tramite **cosine similarity** tra i rispettivi embeddings.
+
+L'obiettivo è verificare se una rappresentazione semantica riesce a riconoscere corrispondenze tra attributi che esprimono lo stesso concetto anche quando utilizzano parole differenti.
+
+---
+
+### Configurazioni analizzate
+
+Sono state confrontate tre configurazioni.
+
+#### Solo nome
+
+Viene generato l'embedding utilizzando esclusivamente il nome dell'attributo.
+
+Prima della generazione dell'embedding, il carattere `_` viene sostituito con uno spazio.
+
+Ad esempio:
+
+`annual_salary`
+
+diventa:
+
+`annual salary`
+
+#### Sola descrizione
+
+Viene utilizzata esclusivamente la descrizione testuale dell'attributo.
+
+Questa configurazione permette di verificare se gli embeddings riescono a sfruttare meglio delle metriche lessicali descrizioni semanticamente equivalenti ma formulate con parole differenti.
+
+#### Nome + descrizione
+
+Nome e descrizione vengono combinati in un unico testo prima della generazione dell'embedding.
+
+Ad esempio:
+
+`annual salary. Retribuzione lorda prevista su base annua`
+
+In questo modo il modello può utilizzare contemporaneamente il nome dell'attributo e il contesto fornito dalla descrizione.
+
+---
+
+## Selezione delle soglie su CUSTOMERS
+
+Anche per gli embeddings è stato mantenuto lo stesso protocollo sperimentale utilizzato per le baseline lessicali:
+
+`CUSTOMERS` → selezione della soglia  
+`EMPLOYEES` → valutazione finale con soglia bloccata
+
+Le soglie sono state selezionate esclusivamente sul development set `CUSTOMERS`.
+
+Sono state analizzate le seguenti soglie:
+
+`0.10`, `0.20`, `0.30`, `0.40`, `0.50`, `0.55`, `0.60`, `0.65`, `0.70`, `0.75`, `0.80`, `0.85`, `0.90`
+
+La scelta è stata effettuata utilizzando il seguente criterio:
+
+1. F1-score più alto;
+2. in caso di parità, precision più alta;
+3. in caso di ulteriore parità, soglia più alta.
+
+Una volta selezionate le soglie, queste non sono state modificate dopo aver osservato i risultati su `EMPLOYEES`.
+
+### Soglie selezionate
+
+| Configurazione | Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Solo nome | 0.80 | 4 | 1 | 3 | 0.8000 | 0.5714 | 0.6667 |
+| Sola descrizione | 0.65 | 7 | 6 | 0 | 0.5385 | 1.0000 | 0.7000 |
+| Nome + descrizione | 0.75 | 5 | 1 | 2 | 0.8333 | 0.7143 | 0.7692 |
+
+La configurazione con il miglior F1-score sul development set è risultata:
+
+`nome + descrizione`
+
+con F1-score pari a `0.7692`.
+
+---
+
+## Valutazione finale degli embeddings su EMPLOYEES
+
+Le soglie selezionate su `CUSTOMERS` sono state successivamente bloccate e applicate senza ulteriori modifiche al dataset `EMPLOYEES`.
+
+### Risultati finali
+
+| Configurazione | Soglia | TP | FP | FN | Precision | Recall | F1-score |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Solo nome | 0.80 | 0 | 2 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| Sola descrizione | 0.65 | 6 | 17 | 1 | 0.2609 | 0.8571 | 0.4000 |
+| Nome + descrizione | 0.75 | 3 | 3 | 4 | 0.5000 | 0.4286 | 0.4615 |
+
+La migliore configurazione semantica sul test set è risultata:
+
+`nome + descrizione`
+
+con:
+
+- **Precision = 0.5000**
+- **Recall = 0.4286**
+- **F1-score = 0.4615**
+
+---
+
+## Analisi dei risultati degli embeddings
+
+### Solo nome
+
+La configurazione basata esclusivamente sul nome non individua nessuna delle 7 corrispondenze corrette sul test set.
+
+Produce invece due falsi positivi:
+
+- `annual_salary` ↔ `monthly_salary` con score `0.8970`
+- `office_loc` ↔ `office_city` con score `0.8226`
+
+Alcune coppie corrette ottengono invece valori molto inferiori alla soglia:
+
+- `annual_salary` ↔ `compensation` = `0.5018`
+- `emp_id` ↔ `employee_number` = `0.4318`
+- `fname` ↔ `first_name` = `0.4226`
+
+Ho osservato quindi che utilizzare soltanto nomi molto brevi non fornisce sempre al modello abbastanza contesto per riconoscere correttamente il significato dell'attributo.
+
+Inoltre, nomi molto simili possono ottenere una similarità elevata anche quando rappresentano concetti differenti.
+
+---
+
+### Sola descrizione
+
+L'utilizzo della sola descrizione permette di individuare 6 delle 7 corrispondenze corrette.
+
+Il recall raggiunge quindi:
+
+`0.8571`
+
+Questo risultato è particolarmente interessante rispetto alle baseline lessicali, nelle quali le descrizioni realistiche avevano prodotto risultati molto più bassi.
+
+Gli embeddings riescono quindi a sfruttare meglio descrizioni che esprimono lo stesso concetto utilizzando parole differenti.
+
+La configurazione produce però 17 falsi positivi.
+
+Questo mostra che il modello tende a considerare simili anche descrizioni appartenenti allo stesso contesto generale, ad esempio attributi relativi a dipendenti, reparti o sedi lavorative, pur rappresentando concetti differenti.
+
+---
+
+### Nome + descrizione
+
+La combinazione di nome e descrizione rappresenta il miglior compromesso tra le configurazioni basate su embeddings.
+
+Ottiene:
+
+- TP = 3
+- FP = 3
+- FN = 4
+- Precision = 0.5000
+- Recall = 0.4286
+- F1-score = 0.4615
+
+Le corrispondenze corrette individuate sono:
+
+- `dept` ↔ `department`
+- `hire_date` ↔ `start_date`
+- `office_loc` ↔ `work_location`
+
+Rimangono però alcuni falsi positivi significativi:
+
+- `annual_salary` ↔ `monthly_salary`
+- `office_loc` ↔ `department`
+- `office_loc` ↔ `office_city`
+
+Il caso più interessante è:
+
+`annual_salary` ↔ `monthly_salary`
+
+che ottiene uno score pari a `0.7685` e supera la soglia di `0.75`.
+
+La corrispondenza corretta:
+
+`annual_salary` ↔ `compensation`
+
+ottiene invece uno score pari a `0.7021` e rimane sotto la soglia.
+
+Questo mostra che gli embeddings riescono a riconoscere la vicinanza semantica tra concetti, ma possono ancora avere difficoltà nel distinguere concetti fortemente correlati ma non equivalenti.
+
+---
+
+## Confronto tra baseline lessicale e embeddings
+
+La migliore configurazione lessicale sul test set è:
+
+`Levenshtein + nome + filtro sul tipo`
+
+con:
+
+`F1-score = 0.5000`
+
+La migliore configurazione basata su embeddings è invece:
+
+`Embeddings + nome + descrizione`
+
+con:
+
+`F1-score = 0.4615`
+
+Gli embeddings non superano quindi la migliore baseline lessicale nel risultato complessivo.
+
+Ho osservato però una differenza importante nel comportamento dei metodi.
+
+La configurazione embeddings basata sulla sola descrizione riesce a recuperare 6 corrispondenze corrette su 7, mostrando una maggiore capacità di sfruttare informazioni semanticamente equivalenti espresse con parole differenti.
+
+D'altra parte, produce anche molti falsi positivi tra concetti appartenenti allo stesso dominio.
+
+Questo risultato mostra che una rappresentazione semantica non elimina automaticamente tutti gli errori dello schema matching e che può essere utile combinare l'informazione semantica con ulteriori vincoli o strategie di selezione.
+
+---
+
+## Considerazioni personali sugli embeddings
+
+Prima di questo esperimento mi aspettavo che gli embeddings potessero migliorare nettamente le prestazioni rispetto alle metriche lessicali.
+
+I risultati mostrano invece una situazione più complessa.
+
+Ho osservato che gli embeddings sono effettivamente più adatti a confrontare descrizioni formulate con parole differenti, ma possono assegnare score elevati anche a concetti correlati che non devono essere considerati corrispondenti.
+
+Il caso `annual_salary` ↔ `monthly_salary` è particolarmente significativo: il modello riconosce correttamente che entrambi gli attributi riguardano una retribuzione, ma non attribuisce abbastanza importanza alla differenza tra valore annuale e mensile.
+
+Questo risultato mi ha fatto capire che riconoscere una vicinanza semantica non equivale necessariamente a riconoscere una corrispondenza di schema.
+
+Questa osservazione può essere utilizzata come punto di partenza per una successiva estensione sperimentale.
+
+---
+
+## File aggiunti per la baseline embeddings
+
+- `selezione_parametri_embeddings.py`: selezione delle soglie sul development set `CUSTOMERS`;
+- `selezione_parametri_embeddings.csv`: risultati completi delle soglie provate;
+- `parametri_embeddings_selezionati.csv`: soglie selezionate per le tre configurazioni;
+- `score_embeddings_customers.csv`: score di similarità di tutte le coppie del development set;
+- `valutazione_finale_embeddings.py`: valutazione finale su `EMPLOYEES` con soglie bloccate;
+- `valutazione_finale_embeddings.csv`: risultati riassuntivi del test finale;
+- `dettagli_valutazione_embeddings.csv`: dettaglio delle predizioni e degli score sul test set.
+
+---
+
+## Esecuzione della baseline embeddings
+
+Per selezionare le soglie sul development set:
+
+```bash
+py selezione_parametri_embeddings.py
+```
+
+Per eseguire la valutazione finale sul test set:
+
+```bash
+py valutazione_finale_embeddings.py
+```
 
 
 ## File del progetto
