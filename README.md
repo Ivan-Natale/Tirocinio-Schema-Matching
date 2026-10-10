@@ -1277,6 +1277,194 @@ Questa osservazione può essere utilizzata come punto di partenza per una succes
 
 ---
 
+## Estensioni sperimentali proposte
+
+Dopo aver analizzato gli errori prodotti dalla baseline semantica basata su embeddings, ho individuato due possibili limiti dell'approccio attuale che vorrei analizzare con due esperimenti separati.
+
+L'obiettivo non è modificare il modello utilizzato per generare gli embeddings, ma verificare se alcune informazioni o strategie aggiuntive possono migliorare la fase di selezione delle corrispondenze.
+
+Il modello di riferimento rimane:
+
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+
+con similarità coseno.
+
+Le soglie già selezionate sul dataset `CUSTOMERS` verranno mantenute invariate, in modo da isolare il più possibile l'effetto delle due estensioni.
+
+Le due possibilità che verranno analizzate sono:
+
+1. selezione delle corrispondenze tramite miglior match reciproco;
+2. integrazione di un filtro basato sul tipo degli attributi.
+
+---
+
+## Esperimento 1 - Miglior match reciproco
+
+### Problema individuato
+
+Nella baseline embeddings attuale ogni coppia di attributi viene valutata indipendentemente.
+
+Se la similarità supera la soglia, la coppia viene accettata come corrispondenza.
+
+Questo significa che uno stesso attributo può essere associato contemporaneamente a più attributi dell'altro schema.
+
+Durante la valutazione su `EMPLOYEES` ho osservato, ad esempio, che `office_loc` viene associato a più candidati:
+
+- `office_loc` ↔ `work_location`
+- `office_loc` ↔ `department`
+- `office_loc` ↔ `office_city`
+
+La prima coppia rappresenta una corrispondenza corretta, mentre le altre sono falsi positivi.
+
+Questo suggerisce che il problema non dipenda necessariamente soltanto dagli score prodotti dagli embeddings, ma anche dal fatto che il metodo attuale accetta tutte le coppie che superano la soglia senza confrontarle tra loro.
+
+### Ipotesi
+
+La mia ipotesi è che una strategia di selezione più restrittiva possa ridurre il numero di falsi positivi.
+
+In particolare, una corrispondenza potrebbe essere considerata più affidabile quando i due attributi rappresentano reciprocamente il miglior candidato disponibile.
+
+### Soluzione proposta
+
+Verrà sperimentata una strategia di **miglior match reciproco**.
+
+Una coppia:
+
+`A ↔ B`
+
+verrà accettata soltanto se:
+
+1. lo score supera la soglia già selezionata su `CUSTOMERS`;
+2. `B` è il candidato con similarità più alta per `A`;
+3. `A` è il candidato con similarità più alta per `B`.
+
+In questo modo non verranno più accettate automaticamente tutte le coppie sopra soglia.
+
+### Limite atteso
+
+Questa strategia non garantisce necessariamente un miglioramento.
+
+In alcuni casi il candidato con score più alto può essere proprio quello sbagliato.
+
+Ad esempio, nella configurazione embeddings `nome + descrizione`:
+
+`annual_salary` ↔ `monthly_salary`
+
+ottiene uno score più alto rispetto a:
+
+`annual_salary` ↔ `compensation`
+
+anche se la seconda coppia rappresenta la corrispondenza presente nella ground truth.
+
+L'esperimento permetterà quindi di capire se il problema principale riguarda la selezione delle corrispondenze oppure gli score prodotti dal modello stesso.
+
+---
+
+## Esperimento 2 - Embeddings con filtro sul tipo
+
+### Problema individuato
+
+Gli embeddings vengono calcolati utilizzando informazioni testuali, ma non utilizzano direttamente il tipo strutturale degli attributi.
+
+Di conseguenza, due attributi possono ottenere una similarità semantica elevata anche quando i rispettivi tipi sono incompatibili.
+
+Nelle baseline lessicali ho già osservato che il filtro sul tipo può ridurre alcuni falsi positivi, soprattutto quando viene utilizzato insieme a Levenshtein.
+
+Vorrei quindi verificare se lo stesso principio può essere utile anche con gli embeddings.
+
+### Ipotesi
+
+La mia ipotesi è che l'informazione sul tipo possa essere utilizzata come vincolo aggiuntivo per eliminare alcune corrispondenze semanticamente plausibili ma strutturalmente incompatibili.
+
+In questo modo gli embeddings fornirebbero l'informazione semantica, mentre il tipo fornirebbe un controllo strutturale aggiuntivo.
+
+### Soluzione proposta
+
+Prima di accettare una coppia verrà verificata la compatibilità dei tipi.
+
+La prima versione dell'esperimento utilizzerà lo stesso filtro rigido già impiegato nelle baseline lessicali:
+
+```python
+if tipo_a != tipo_b:
+    continue
+  ```
+
+Solo le coppie con tipo uguale potranno quindi essere valutate come possibili corrispondenze.
+
+Le soglie già selezionate per le configurazioni embeddings resteranno invariate.
+
+### Limite atteso
+
+Il filtro sul tipo può eliminare soltanto errori che coinvolgono attributi con tipi differenti.
+
+Non può invece risolvere casi come:
+
+`annual_salary` ↔ `monthly_salary`
+
+perché entrambi gli attributi sono di tipo `FLOAT`.
+
+---
+
+## Protocollo sperimentale
+
+Per entrambi gli esperimenti verrà mantenuta invariata la baseline embeddings originale.
+
+In particolare non verranno modificati:
+
+- il modello `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`;
+- la similarità coseno;
+- le tre configurazioni `solo nome`, `sola descrizione` e `nome + descrizione`;
+- le soglie già selezionate sul dataset `CUSTOMERS`.
+
+Le due estensioni verranno analizzate separatamente, in modo da poter osservare il contributo specifico di ciascuna modifica.
+
+Il confronto sarà quindi effettuato tra:
+
+- baseline embeddings originale;
+- embeddings + miglior match reciproco;
+- embeddings + filtro sul tipo.
+
+---
+
+## Criterio di valutazione
+
+Per valutare le due estensioni verranno utilizzate le stesse metriche impiegate negli esperimenti precedenti:
+
+- True Positive (TP);
+- False Positive (FP);
+- False Negative (FN);
+- Precision;
+- Recall;
+- F1-score.
+
+Oltre alle metriche complessive, verranno analizzate anche le singole corrispondenze aggiunte, eliminate o mantenute dalle nuove strategie.
+
+Presterò particolare attenzione ad alcuni errori già osservati nella baseline embeddings, come:
+
+- `annual_salary` ↔ `monthly_salary`;
+- `annual_salary` ↔ `compensation`;
+- `office_loc` ↔ `work_location`;
+- `office_loc` ↔ `office_city`;
+- `home_city` ↔ `office_city`.
+
+Per il miglior match reciproco verificherò soprattutto se la riduzione del numero di corrispondenze candidate permette di diminuire i falsi positivi senza causare una perdita eccessiva di veri positivi.
+
+Per il filtro sul tipo verificherò invece quanti falsi positivi vengono eliminati grazie all'informazione strutturale e quali errori rimangono perché coinvolgono attributi dello stesso tipo.
+
+Un eventuale peggioramento delle metriche verrà comunque considerato un risultato utile, perché permetterà di capire meglio se il limite dipende dalla fase di selezione, dall'assenza di informazioni strutturali oppure direttamente dagli score prodotti dagli embeddings.
+
+## Obiettivo dell'analisi
+
+Con questi due esperimenti voglio capire meglio da dove derivano i falsi positivi osservati nella baseline embeddings.
+
+In particolare, voglio distinguere tra:
+
+1. errori dovuti al fatto che vengono accettate contemporaneamente troppe coppie sopra soglia;
+2. errori che potrebbero essere eliminati utilizzando informazioni strutturali come il tipo;
+3. errori dovuti direttamente alla rappresentazione semantica, quando il modello assegna uno score maggiore a una coppia semanticamente vicina ma non equivalente.
+
+L'obiettivo non è necessariamente ottenere un miglioramento in entrambi gli esperimenti, ma capire quale componente del metodo contribuisce maggiormente agli errori osservati.
+
 ## File aggiunti per la baseline embeddings
 
 - `selezione_parametri_embeddings.py`: selezione delle soglie sul development set `CUSTOMERS`;
