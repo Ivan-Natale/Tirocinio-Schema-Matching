@@ -1,0 +1,7 @@
+configurazione,soglia,metodo,tp,fp,fn,precision,recall,f1_score,coppie_escluse_tipo
+solo_nome,0.8,baseline_originale,0,2,7,0.0,0.0,0,0
+solo_nome,0.8,filtro_tipo,0,2,7,0.0,0.0,0,58
+sola_descrizione,0.65,baseline_originale,6,17,1,0.2609,0.8571,0.4,0
+sola_descrizione,0.65,filtro_tipo,6,13,1,0.3158,0.8571,0.4615,58
+nome_descrizione,0.75,baseline_originale,3,3,4,0.5,0.4286,0.4615,0
+nome_descrizione,0.75,filtro_tipo,3,3,4,0.5,0.4286,0.4615,58

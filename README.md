@@ -1465,6 +1465,313 @@ In particolare, voglio distinguere tra:
 
 L'obiettivo non è necessariamente ottenere un miglioramento in entrambi gli esperimenti, ma capire quale componente del metodo contribuisce maggiormente agli errori osservati.
 
+
+## Risultati delle estensioni sperimentali
+
+Dopo aver definito le due estensioni sperimentali, ho eseguito i test sul dataset `EMPLOYEES` mantenendo invariati il modello, le rappresentazioni testuali e le soglie precedentemente selezionate sul dataset `CUSTOMERS`.
+
+Il modello utilizzato rimane:
+
+`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+
+con similarità coseno.
+
+Le soglie utilizzate sono:
+
+| Configurazione | Soglia |
+|---|---:|
+| solo nome | 0.80 |
+| sola descrizione | 0.65 |
+| nome + descrizione | 0.75 |
+
+Le due modifiche sono state valutate separatamente, in modo da osservare l'effetto specifico di ciascuna strategia.
+
+---
+
+## Esperimento 1 - Miglior match reciproco
+
+### Metodo
+
+Nella baseline originale ogni coppia che supera la soglia viene considerata una possibile corrispondenza.
+
+Nel nuovo esperimento una coppia `A ↔ B` viene invece selezionata soltanto se:
+
+1. supera la soglia già stabilita;
+2. `B` è il candidato con score più alto per `A`;
+3. `A` è il candidato con score più alto per `B`.
+
+Non sono state modificate né le soglie né le rappresentazioni utilizzate dagli embeddings.
+
+### Risultati
+
+| Configurazione | Metodo | TP | FP | FN | Precision | Recall | F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| solo nome | baseline | 0 | 2 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| solo nome | match reciproco | 0 | 2 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| sola descrizione | baseline | 6 | 17 | 1 | 0.2609 | 0.8571 | 0.4000 |
+| sola descrizione | match reciproco | 3 | 1 | 4 | 0.7500 | 0.4286 | 0.5455 |
+| nome + descrizione | baseline | 3 | 3 | 4 | 0.5000 | 0.4286 | 0.4615 |
+| nome + descrizione | match reciproco | 2 | 2 | 5 | 0.5000 | 0.2857 | 0.3636 |
+
+### Analisi
+
+Il risultato più interessante riguarda la configurazione `sola descrizione`.
+
+La baseline originale otteneva:
+
+- 6 TP;
+- 17 FP;
+- 1 FN;
+- Precision = 0.2609;
+- Recall = 0.8571;
+- F1 = 0.4000.
+
+Con il miglior match reciproco si ottengono invece:
+
+- 3 TP;
+- 1 FP;
+- 4 FN;
+- Precision = 0.7500;
+- Recall = 0.4286;
+- F1 = 0.5455.
+
+La nuova strategia riduce quindi i falsi positivi da 17 a 1 e porta la precision da 0.2609 a 0.7500.
+
+Questo risultato conferma parzialmente la mia ipotesi iniziale: una parte degli errori della baseline basata sulle descrizioni era effettivamente causata dal fatto che venivano accettati contemporaneamente troppi candidati sopra soglia.
+
+Il miglioramento della precision viene però ottenuto a discapito del recall. I veri positivi scendono infatti da 6 a 3.
+
+La strategia risulta quindi molto più conservativa: produce meno corrispondenze errate, ma elimina anche alcune corrispondenze corrette.
+
+### Casi significativi
+
+Nella configurazione `solo nome` rimangono i due falsi positivi:
+
+`annual_salary` ↔ `monthly_salary`
+
+con score:
+
+`0.8970`
+
+e:
+
+`office_loc` ↔ `office_city`
+
+con score:
+
+`0.8226`
+
+Entrambe le coppie sono anche migliori match reciproci.
+
+Questo mostra un limite importante della strategia: se la coppia sbagliata è già considerata dal modello il miglior candidato in entrambe le direzioni, modificare soltanto la fase di selezione non permette di correggere l'errore.
+
+Lo stesso fenomeno compare nella configurazione `nome + descrizione`, dove rimangono:
+
+`annual_salary` ↔ `monthly_salary`
+
+e:
+
+`office_loc` ↔ `office_city`.
+
+In questa configurazione il risultato peggiora:
+
+`F1 = 0.4615 → 0.3636`
+
+perché viene eliminato anche un vero positivo senza ottenere un aumento della precision.
+
+### Considerazione personale
+
+Questo esperimento mi ha fatto capire che non tutti i falsi positivi hanno la stessa origine.
+
+In alcuni casi il problema deriva dal fatto che vengono accettate troppe coppie contemporaneamente. In questo caso una strategia di selezione più restrittiva può essere utile.
+
+In altri casi, invece, è direttamente il modello ad assegnare lo score maggiore alla coppia sbagliata. In queste situazioni il miglior match reciproco non è sufficiente.
+
+---
+
+## Esperimento 2 - Embeddings con filtro sul tipo
+
+### Metodo
+
+Nel secondo esperimento ho aggiunto agli embeddings un vincolo strutturale basato sul tipo degli attributi.
+
+Una coppia viene esclusa quando i due tipi sono differenti:
+
+```python
+if tipo_a != tipo_b:
+    continue
+```
+
+Dopo questo controllo viene applicata normalmente la soglia già selezionata su `CUSTOMERS`.
+
+Anche in questo caso non sono stati modificati né il modello né i valori delle soglie.
+
+### Risultati
+
+| Configurazione | Metodo | TP | FP | FN | Precision | Recall | F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| solo nome | baseline | 0 | 2 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| solo nome | filtro tipo | 0 | 2 | 7 | 0.0000 | 0.0000 | 0.0000 |
+| sola descrizione | baseline | 6 | 17 | 1 | 0.2609 | 0.8571 | 0.4000 |
+| sola descrizione | filtro tipo | 6 | 13 | 1 | 0.3158 | 0.8571 | 0.4615 |
+| nome + descrizione | baseline | 3 | 3 | 4 | 0.5000 | 0.4286 | 0.4615 |
+| nome + descrizione | filtro tipo | 3 | 3 | 4 | 0.5000 | 0.4286 | 0.4615 |
+
+### Analisi
+
+Anche in questo esperimento la configurazione più interessante è `sola descrizione`.
+
+Il filtro sul tipo porta i falsi positivi da:
+
+`17 → 13`
+
+senza eliminare nessun vero positivo.
+
+Il recall rimane infatti invariato:
+
+`0.8571`
+
+mentre la precision aumenta:
+
+`0.2609 → 0.3158`
+
+e l'F1-score passa da:
+
+`0.4000 → 0.4615`.
+
+Il filtro riesce quindi a eliminare alcune coppie semanticamente simili ma strutturalmente incompatibili.
+
+Tra i falsi positivi eliminati sono presenti casi come:
+
+`contract_type` ↔ `start_date`
+
+perché:
+
+`TEXT ≠ DATE`
+
+e:
+
+`hire_date` ↔ `department`
+
+perché:
+
+`DATE ≠ TEXT`.
+
+Questo mostra che il tipo contiene un'informazione complementare rispetto agli embeddings.
+
+### Limiti del filtro sul tipo
+
+Il filtro non può però risolvere gli errori tra attributi che condividono lo stesso tipo.
+
+Ad esempio:
+
+`annual_salary` ↔ `monthly_salary`
+
+rimane una coppia candidata perché entrambi sono:
+
+`FLOAT`.
+
+Allo stesso modo:
+
+`home_city` ↔ `office_city`
+
+e:
+
+`office_loc` ↔ `office_city`
+
+rimangono possibili corrispondenze perché gli attributi coinvolti sono tutti di tipo:
+
+`TEXT`.
+
+Nella configurazione `nome + descrizione`, infatti, il filtro sul tipo non modifica nessuna delle predizioni e l'F1-score rimane `0.4615`.
+
+Il numero di coppie strutturalmente escluse è 58 sulle 100 combinazioni possibili tra i due schemi.
+
+Questo valore non significa però che siano stati eliminati 58 falsi positivi: molte di queste coppie non avrebbero comunque superato la soglia. Il confronto corretto deve essere effettuato osservando le predizioni finali.
+
+### Considerazione personale
+
+Il secondo esperimento mi ha fatto capire che il tipo può essere utilizzato come informazione aggiuntiva per eliminare errori strutturali evidenti.
+
+Il suo effetto è però limitato quando molti attributi condividono tipi generici come `TEXT`.
+
+Il filtro sul tipo non è quindi sufficiente da solo per risolvere le ambiguità semantiche, ma può integrare il segnale prodotto dagli embeddings senza modificarne direttamente lo score.
+
+---
+
+## Confronto tra le due estensioni
+
+Considerando l'F1-score, il confronto finale è:
+
+| Configurazione | Baseline embeddings | Match reciproco | Filtro tipo |
+|---|---:|---:|---:|
+| solo nome | 0.0000 | 0.0000 | 0.0000 |
+| sola descrizione | 0.4000 | **0.5455** | 0.4615 |
+| nome + descrizione | **0.4615** | 0.3636 | **0.4615** |
+
+Il miglior risultato ottenuto dalle due estensioni è quindi:
+
+`sola descrizione + miglior match reciproco`
+
+con:
+
+`F1 = 0.5455`.
+
+Per confronto, la migliore configurazione lessicale precedentemente valutata su `EMPLOYEES`, basata su Levenshtein con filtro sul tipo, aveva ottenuto:
+
+`F1 = 0.5000`.
+
+Il miglior match reciproco permette quindi di ottenere, in questo esperimento, un F1-score superiore alla migliore baseline lessicale.
+
+I risultati mostrano però che non esiste una modifica che migliori automaticamente tutte le configurazioni.
+
+Il match reciproco è particolarmente efficace nel ridurre il numero di falsi positivi, ma può diminuire sensibilmente il recall.
+
+Il filtro sul tipo è meno aggressivo: elimina soltanto alcune coppie incompatibili e, nel caso della sola descrizione, migliora la precision senza ridurre il recall.
+
+---
+
+## Conclusioni delle estensioni sperimentali
+
+I due esperimenti hanno evidenziato due cause differenti degli errori.
+
+Il primo problema riguarda la strategia di selezione. Accettare indipendentemente tutte le coppie sopra soglia può produrre molte corrispondenze concorrenti. Il miglior match reciproco può ridurre questo fenomeno, ma rischia di eliminare anche corrispondenze corrette.
+
+Il secondo problema riguarda l'assenza di informazioni strutturali negli embeddings. Il filtro sul tipo può eliminare alcune associazioni incompatibili, ma non distingue concetti differenti quando condividono lo stesso tipo.
+
+Un caso particolarmente significativo rimane:
+
+`annual_salary` ↔ `monthly_salary`.
+
+Questa coppia è semanticamente e lessicalmente molto simile alla prima vista, condivide il tipo `FLOAT` e ottiene uno score elevato, ma rappresenta un concetto diverso dalla corrispondenza corretta:
+
+`annual_salary` ↔ `compensation`.
+
+Questo caso mostra che la similarità semantica non coincide necessariamente con l'equivalenza richiesta nello schema matching.
+
+Nel complesso, gli esperimenti mi hanno fatto capire che la qualità del matching dipende da più componenti: la rappresentazione degli attributi, il tipo di similarità utilizzato, le informazioni strutturali disponibili e la strategia utilizzata per selezionare le corrispondenze finali.
+
+### Nota metodologica
+
+Queste due estensioni sono state progettate partendo dagli errori già osservati sul dataset `EMPLOYEES`, come previsto per l'attività sperimentale libera.
+
+Per questo motivo i risultati devono essere interpretati come un'analisi diagnostica successiva alla valutazione principale e non come una nuova valutazione completamente indipendente su un test set mai osservato.
+
+Non sono comunque state modificate le soglie già selezionate su `CUSTOMERS`, in modo da evitare di adattare ulteriormente i parametri ai risultati di `EMPLOYEES`.
+
+---
+
+## File delle estensioni sperimentali
+
+I file prodotti per questi esperimenti sono:
+
+- `esperimento_match_reciproco.py`
+- `risultati_match_reciproco.csv`
+- `dettagli_match_reciproco.csv`
+- `esperimento_embeddings_filtro_tipo.py`
+- `risultati_embeddings_filtro_tipo.csv`
+- `dettagli_embeddings_filtro_tipo.csv`
+
 ## File aggiunti per la baseline embeddings
 
 - `selezione_parametri_embeddings.py`: selezione delle soglie sul development set `CUSTOMERS`;

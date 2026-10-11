@@ -1,0 +1,7 @@
+configurazione,soglia,metodo,tp,fp,fn,precision,recall,f1_score
+solo_nome,0.8,baseline_originale,0,2,7,0.0,0.0,0
+solo_nome,0.8,match_reciproco,0,2,7,0.0,0.0,0
+sola_descrizione,0.65,baseline_originale,6,17,1,0.2609,0.8571,0.4
+sola_descrizione,0.65,match_reciproco,3,1,4,0.75,0.4286,0.5455
+nome_descrizione,0.75,baseline_originale,3,3,4,0.5,0.4286,0.4615
+nome_descrizione,0.75,match_reciproco,2,2,5,0.5,0.2857,0.3636
