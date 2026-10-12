@@ -1761,6 +1761,107 @@ Non sono comunque state modificate le soglie già selezionate su `CUSTOMERS`, in
 
 ---
 
+
+
+## Confronto finale dei metodi
+
+Al termine degli esperimenti ho raccolto i principali risultati ottenuti sul dataset `EMPLOYEES`.
+
+Per mantenere chiara la distinzione metodologica, separo le baseline valutate con il protocollo principale dalle estensioni progettate successivamente partendo dall'analisi degli errori.
+
+| Metodo | Configurazione | Precision | Recall | F1 |
+|---|---|---:|---:|---:|
+| Jaccard | solo nome | 0.2500 | 0.1429 | 0.1818 |
+| Jaccard | nome + filtro tipo | 0.2500 | 0.1429 | 0.1818 |
+| Levenshtein | solo nome | 0.4286 | 0.4286 | 0.4286 |
+| Levenshtein | nome + filtro tipo | 0.4444 | 0.5714 | **0.5000** |
+| Embeddings | sola descrizione | 0.2609 | **0.8571** | 0.4000 |
+| Embeddings | nome + descrizione | 0.5000 | 0.4286 | 0.4615 |
+| Embeddings + filtro tipo* | sola descrizione | 0.3158 | **0.8571** | 0.4615 |
+| Embeddings + match reciproco* | sola descrizione | **0.7500** | 0.4286 | **0.5455** |
+
+`*` Le estensioni sono state progettate dopo aver osservato gli errori sul dataset `EMPLOYEES` e vengono quindi considerate analisi diagnostiche post-hoc.
+
+### Interpretazione complessiva
+
+Tra le configurazioni appartenenti alla valutazione principale, il risultato migliore sul dataset `EMPLOYEES` è stato ottenuto da:
+
+`Levenshtein + filtro sul tipo`
+
+con:
+
+`F1 = 0.5000`.
+
+Questo risultato mostra che, nel dataset utilizzato, una misura lessicale relativamente semplice può rimanere competitiva quando viene integrata con una informazione strutturale come il tipo.
+
+Gli embeddings hanno però mostrato un comportamento differente.
+
+La configurazione `sola descrizione` raggiunge:
+
+`Recall = 0.8571`
+
+individuando 6 delle 7 corrispondenze presenti nella ground truth.
+
+Allo stesso tempo produce 17 falsi positivi, ottenendo:
+
+`Precision = 0.2609`.
+
+Questo suggerisce che gli embeddings riescono a riconoscere molte relazioni semanticamente plausibili, ma tendono anche ad assegnare score elevati ad attributi correlati che non rappresentano necessariamente la stessa informazione.
+
+La configurazione `nome + descrizione` risulta più equilibrata:
+
+`Precision = 0.5000`
+
+`Recall = 0.4286`
+
+`F1 = 0.4615`.
+
+### Risultato delle estensioni
+
+Tra le estensioni sperimentali, il risultato più alto è stato ottenuto utilizzando:
+
+`sola descrizione + miglior match reciproco`
+
+con:
+
+`Precision = 0.7500`
+
+`Recall = 0.4286`
+
+`F1 = 0.5455`.
+
+La strategia riduce fortemente i falsi positivi, ma rende il matcher più conservativo e diminuisce il numero di corrispondenze corrette individuate.
+
+Il filtro sul tipo produce invece un miglioramento più limitato ma senza diminuire il recall nella configurazione basata sulle descrizioni:
+
+`F1 = 0.4000 → 0.4615`.
+
+### Considerazione finale
+
+Un risultato che inizialmente non mi aspettavo è che gli embeddings non abbiano superato automaticamente i metodi lessicali.
+
+Mi aspettavo che una rappresentazione semantica fosse nettamente più efficace nel riconoscere attributi equivalenti con nomi differenti.
+
+Gli esperimenti hanno invece mostrato che riconoscere una relazione semantica non significa necessariamente riconoscere una equivalenza di schema.
+
+Un esempio particolarmente significativo è:
+
+`annual_salary` ↔ `monthly_salary`
+
+La coppia è semanticamente molto vicina e ottiene uno score elevato, ma i due attributi hanno significati diversi perché uno rappresenta una retribuzione annuale e l'altro una retribuzione mensile.
+
+Al contrario, la corrispondenza corretta:
+
+`annual_salary` ↔ `compensation`
+
+può ottenere uno score inferiore nonostante rappresenti il concetto corretto nella ground truth.
+
+Questo mi ha fatto capire che nello schema matching non è sufficiente misurare soltanto quanto due attributi siano linguisticamente o semanticamente simili. È necessario considerare anche vincoli strutturali, contesto e strategia di selezione delle corrispondenze.
+
+I risultati completi del confronto sono disponibili nel file:
+
+`confronto_finale_metodi.csv`
+
 ## File delle estensioni sperimentali
 
 I file prodotti per questi esperimenti sono:
