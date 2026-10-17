@@ -1900,6 +1900,324 @@ py valutazione_finale_embeddings.py
 ```
 
 
+## Validazione esterna su MIMIC-III → OMOP
+
+Dopo aver fissato il protocollo nel file `PIANO_VALIDAZIONE.md`, ho eseguito i metodi sul dataset pubblico MIMIC-III → OMOP senza modificare soglie, modello o parametri sulla base dei risultati osservati.
+
+La validazione utilizza:
+
+- 268 attributi MIMIC presenti nel file di mapping;
+- 425 attributi OMOP;
+- 153 corrispondenze positive utilizzabili nella ground truth.
+
+Il numero complessivo di coppie candidate è quindi:
+
+`268 × 425 = 113900`
+
+Le corrispondenze positive rappresentano una parte molto piccola dello spazio delle coppie possibili. Questo rende il nuovo scenario molto più difficile rispetto ai dataset sintetici utilizzati durante lo sviluppo.
+
+### Controllo della ground truth
+
+Durante il caricamento del benchmark sono state individuate due corrispondenze positive che fanno riferimento a un attributo target non presente nello schema OMOP fornito:
+
+- `CHARTEVENTS.VALUE` → `MEASUREMENT.VALUE_AS_STRING`
+- `LABEVENTS.VALUE` → `MEASUREMENT.VALUE_AS_STRING`
+
+Ho scelto di non modificare manualmente la ground truth e di escludere queste due coppie dal calcolo delle metriche.
+
+Le anomalie vengono comunque conservate nel file:
+
+`mapping_non_risolti.csv`
+
+in modo da rendere esplicita e riproducibile questa scelta.
+
+---
+
+## Risultati della validazione esterna
+
+| Metodo | Configurazione | TP | FP | FN | Precision | Recall | F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Levenshtein + tipo esatto | solo nome | 1 | 1315 | 152 | 0.0008 | 0.0065 | 0.0014 |
+| Embeddings | solo nome | 5 | 82 | 148 | 0.0575 | 0.0327 | 0.0417 |
+| Embeddings + tipo esatto | solo nome | 0 | 40 | 153 | 0.0000 | 0.0000 | 0.0000 |
+| Embeddings + match reciproco | solo nome | 4 | 31 | 149 | 0.1143 | 0.0261 | **0.0426** |
+| Embeddings + famiglie tipo | solo nome | 3 | 68 | 150 | 0.0423 | 0.0196 | 0.0268 |
+| Embeddings | sola descrizione | 9 | 4864 | 144 | 0.0018 | **0.0588** | 0.0036 |
+| Embeddings + tipo esatto | sola descrizione | 0 | 565 | 153 | 0.0000 | 0.0000 | 0.0000 |
+| Embeddings + match reciproco | sola descrizione | 4 | 386 | 149 | 0.0103 | 0.0261 | 0.0147 |
+| Embeddings + famiglie tipo | sola descrizione | 8 | 1772 | 145 | 0.0045 | 0.0523 | 0.0083 |
+| Embeddings | nome + descrizione | 3 | 8 | 150 | 0.2727 | 0.0196 | 0.0366 |
+| Embeddings + tipo esatto | nome + descrizione | 0 | 4 | 153 | 0.0000 | 0.0000 | 0.0000 |
+| Embeddings + match reciproco | nome + descrizione | 3 | 5 | 150 | **0.3750** | 0.0196 | 0.0373 |
+| Embeddings + famiglie tipo | nome + descrizione | 3 | 6 | 150 | 0.3333 | 0.0196 | 0.0370 |
+
+---
+
+## Analisi dei risultati
+
+### Baseline lessicale
+
+La baseline `Levenshtein + filtro sul tipo` aveva ottenuto risultati relativamente buoni sui dataset sintetici, ma generalizza molto poco sul benchmark pubblico.
+
+Sul nuovo dataset ottiene:
+
+- TP = 1;
+- FP = 1315;
+- FN = 152;
+- F1 = 0.0014.
+
+La soglia `0.33`, selezionata precedentemente e mantenuta invariata, permette il passaggio di un numero molto elevato di coppie quando lo spazio di ricerca cresce fino a oltre centomila combinazioni.
+
+Questo risultato mi ha fatto capire che una soglia efficace su uno schema piccolo non è necessariamente trasferibile direttamente a uno scenario molto più grande.
+
+Non ho modificato la soglia dopo aver osservato i risultati, perché l'obiettivo di questa fase è proprio valutare la capacità di generalizzazione dei parametri già fissati.
+
+---
+
+### Embeddings sul solo nome
+
+La configurazione `solo nome` ottiene:
+
+- TP = 5;
+- FP = 82;
+- FN = 148;
+- Precision = 0.0575;
+- Recall = 0.0327;
+- F1 = 0.0417.
+
+Il risultato è basso in termini assoluti, ma il numero di falsi positivi è molto inferiore rispetto a Levenshtein.
+
+Una possibile spiegazione che considero importante riguarda la quantità di contesto fornita al modello.
+
+Un nome di colonna può essere composto da una o poche parole, ad esempio termini generici come `value`, `id` o `date`.
+
+In questi casi l'embedding può rappresentare il significato generale del termine, ma non dispone necessariamente di informazioni sufficienti per capire il ruolo specifico che quella colonna assume all'interno della tabella.
+
+Questo limite diventa particolarmente evidente in uno schema reale, dove lo stesso termine può essere utilizzato in contesti differenti.
+
+---
+
+### Embeddings sulla sola descrizione
+
+La configurazione `sola descrizione` individua il maggior numero di corrispondenze corrette:
+
+`TP = 9`
+
+e raggiunge il recall più alto:
+
+`Recall = 0.0588`.
+
+Allo stesso tempo produce:
+
+`4864 FP`
+
+con una precision molto bassa.
+
+Questo risultato rafforza una considerazione già emersa negli esperimenti precedenti.
+
+Le descrizioni forniscono più contesto rispetto ai nomi e permettono quindi al modello di riconoscere un numero maggiore di relazioni semanticamente plausibili.
+
+Tuttavia, in un dominio omogeneo come quello clinico, molte descrizioni possono parlare di concetti simili, come pazienti, eventi, misurazioni, codici, date e valori.
+
+Il modello può quindi riconoscere correttamente la vicinanza semantica senza riuscire a distinguere sempre tra:
+
+- attributi equivalenti;
+- attributi soltanto correlati;
+- attributi appartenenti allo stesso dominio.
+
+Questo mi ha fatto capire ancora più chiaramente che **similarità semantica ed equivalenza di schema non coincidono necessariamente**.
+
+---
+
+### Embeddings con nome + descrizione
+
+La configurazione `nome + descrizione` produce:
+
+- TP = 3;
+- FP = 8;
+- Precision = 0.2727;
+- Recall = 0.0196;
+- F1 = 0.0366.
+
+Rispetto alla sola descrizione il numero di falsi positivi diminuisce drasticamente, da 4864 a 8.
+
+La configurazione diventa quindi molto più selettiva.
+
+Il problema è che vengono individuate soltanto 3 delle 153 corrispondenze positive.
+
+Con la soglia fissata a `0.75`, nome e descrizione producono quindi una rappresentazione che accetta poche coppie, ma con una percentuale di correttezza maggiore rispetto alla sola descrizione.
+
+Ho interpretato questo risultato come un ulteriore esempio del compromesso tra Precision e Recall.
+
+---
+
+## Effetto del filtro rigido sul tipo
+
+Il filtro basato sull'uguaglianza esatta del tipo produce:
+
+`TP = 0`
+
+in tutte e tre le configurazioni embeddings.
+
+Questo risultato non significa che il tipo sia un'informazione inutile.
+
+Mostra invece che un controllo del tipo basato sulla semplice uguaglianza della stringa è troppo rigido quando vengono confrontati due sistemi reali differenti.
+
+Ad esempio, due colonne compatibili possono utilizzare tipi rappresentati come:
+
+`INTEGER` e `BIGINT`
+
+oppure:
+
+`TIMESTAMP` e `DATETIME`.
+
+Con il filtro originale queste coppie vengono eliminate prima ancora di valutare la similarità semantica.
+
+Questo risultato ha confermato la motivazione della nuova estensione basata sulle famiglie di tipi.
+
+---
+
+## Nuova estensione: compatibilità tra famiglie di tipi
+
+La compatibilità per famiglie produce risultati migliori rispetto al filtro esatto.
+
+In particolare, con `sola descrizione` si passa da:
+
+`9 TP / 4864 FP`
+
+della baseline a:
+
+`8 TP / 1772 FP`
+
+con il filtro per famiglie.
+
+Viene quindi perso soltanto un vero positivo, mentre vengono eliminati:
+
+`3092 falsi positivi`.
+
+L'F1-score passa da:
+
+`0.0036`
+
+a:
+
+`0.0083`.
+
+Il valore assoluto rimane basso, ma l'esperimento mostra che raggruppare tipi strutturalmente compatibili è più appropriato rispetto alla semplice uguaglianza esatta.
+
+La nuova estensione non risolve da sola lo schema matching, ma permette di utilizzare l'informazione strutturale senza eliminare automaticamente tutte le corrispondenze che utilizzano rappresentazioni del tipo differenti.
+
+---
+
+## Effetto del miglior match reciproco
+
+Il miglior match reciproco mostra un comportamento coerente nelle tre configurazioni.
+
+### Solo nome
+
+La baseline produce:
+
+`5 TP / 82 FP`
+
+mentre il match reciproco produce:
+
+`4 TP / 31 FP`.
+
+Viene perso un vero positivo, ma vengono eliminati 51 falsi positivi.
+
+L'F1 passa da:
+
+`0.0417`
+
+a:
+
+`0.0426`.
+
+### Sola descrizione
+
+La baseline produce:
+
+`9 TP / 4864 FP`
+
+mentre il match reciproco produce:
+
+`4 TP / 386 FP`.
+
+La strategia elimina quindi la maggior parte delle corrispondenze candidate.
+
+Il recall diminuisce, ma l'F1 passa da:
+
+`0.0036`
+
+a:
+
+`0.0147`.
+
+### Nome + descrizione
+
+La baseline produce:
+
+`3 TP / 8 FP`
+
+mentre il match reciproco produce:
+
+`3 TP / 5 FP`.
+
+In questo caso vengono conservati tutti i veri positivi e vengono eliminati tre falsi positivi.
+
+La precision passa da:
+
+`0.2727`
+
+a:
+
+`0.3750`.
+
+Questo risultato è particolarmente interessante perché mostra che il match reciproco non dipende soltanto dal dataset `EMPLOYEES`.
+
+Anche sul nuovo benchmark esterno la strategia riduce il numero di falsi positivi in tutte e tre le configurazioni.
+
+Il principale limite rimane il possibile sacrificio del recall quando il miglior candidato individuato dal modello non corrisponde alla ground truth.
+
+---
+
+## Considerazioni personali sulla validazione esterna
+
+Prima della validazione esterna mi aspettavo che gli embeddings potessero generalizzare meglio dei metodi lessicali grazie alla loro capacità di rappresentare il significato delle parole.
+
+I risultati sono stati più complessi.
+
+Gli embeddings risultano effettivamente più controllati rispetto alla baseline Levenshtein, ma nomi e descrizioni brevi non sembrano fornire sempre abbastanza contesto per rappresentare correttamente il significato specifico di una colonna all'interno di uno schema complesso.
+
+La sola descrizione permette di individuare più corrispondenze corrette, ma produce anche moltissimi falsi positivi. Questo mi ha fatto capire che aggiungere testo non significa automaticamente fornire al modello il tipo di contesto necessario per distinguere due attributi equivalenti.
+
+In uno schema reale potrebbe essere importante considerare anche informazioni come:
+
+- la tabella di appartenenza;
+- la descrizione della tabella;
+- il contesto delle colonne vicine;
+- eventuali valori delle colonne;
+- vincoli strutturali;
+- relazioni tra tabelle.
+
+Un'altra osservazione importante riguarda la dimensione dello spazio di ricerca.
+
+Nei dataset sintetici il numero delle coppie possibili era molto piccolo. Nel benchmark pubblico vengono invece valutate oltre centomila coppie.
+
+Questo cambia radicalmente il comportamento delle soglie: anche una probabilità relativamente piccola di accettare una coppia errata può produrre centinaia o migliaia di falsi positivi.
+
+Poiché le soglie erano state fissate prima della validazione, non sono state modificate per adattarle al nuovo dataset.
+
+Considero questo risultato non come un fallimento dell'esperimento, ma come una dimostrazione del fatto che i parametri selezionati su dataset piccoli non generalizzano necessariamente a scenari più complessi.
+
+Tra le estensioni analizzate, il miglior match reciproco è quella che mostra il comportamento più stabile, perché riduce i falsi positivi in tutte e tre le configurazioni.
+
+La compatibilità tra famiglie di tipi mostra invece che l'informazione strutturale può essere utile, ma deve essere rappresentata in modo abbastanza flessibile da gestire schemi eterogenei.
+
+Nel complesso, la validazione esterna ha rafforzato la distinzione tra **similarità linguistica**, **similarità semantica** ed **equivalenza di schema**.
+
+
+
 ## File del progetto
 
 - `baseline.py`: baseline basata sulla similarità di Jaccard.

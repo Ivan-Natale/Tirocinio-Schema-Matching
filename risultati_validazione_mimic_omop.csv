@@ -1,0 +1,14 @@
+metodo,configurazione,soglia,predizioni,tp,fp,fn,precision,recall,f1_score,note
+Levenshtein,nome_filtro_tipo,0.33,1316,1,1315,152,0.0008,0.0065,0.0014,Filtro tipo con uguaglianza esatta
+Embeddings,solo_nome,0.8,87,5,82,148,0.0575,0.0327,0.0417,Baseline embeddings senza filtro
+Embeddings+filtro_tipo,solo_nome,0.8,40,0,40,153,0.0,0.0,0.0,Uguaglianza esatta del tipo
+Embeddings+match_reciproco,solo_nome,0.8,35,4,31,149,0.1143,0.0261,0.0426,Miglior candidato reciproco
+Embeddings+famiglie_tipo,solo_nome,0.8,71,3,68,150,0.0423,0.0196,0.0268,Compatibilita tra famiglie di tipi
+Embeddings,sola_descrizione,0.65,4873,9,4864,144,0.0018,0.0588,0.0036,Baseline embeddings senza filtro
+Embeddings+filtro_tipo,sola_descrizione,0.65,565,0,565,153,0.0,0.0,0.0,Uguaglianza esatta del tipo
+Embeddings+match_reciproco,sola_descrizione,0.65,390,4,386,149,0.0103,0.0261,0.0147,Miglior candidato reciproco
+Embeddings+famiglie_tipo,sola_descrizione,0.65,1780,8,1772,145,0.0045,0.0523,0.0083,Compatibilita tra famiglie di tipi
+Embeddings,nome_descrizione,0.75,11,3,8,150,0.2727,0.0196,0.0366,Baseline embeddings senza filtro
+Embeddings+filtro_tipo,nome_descrizione,0.75,4,0,4,153,0.0,0.0,0.0,Uguaglianza esatta del tipo
+Embeddings+match_reciproco,nome_descrizione,0.75,8,3,5,150,0.375,0.0196,0.0373,Miglior candidato reciproco
+Embeddings+famiglie_tipo,nome_descrizione,0.75,9,3,6,150,0.3333,0.0196,0.037,Compatibilita tra famiglie di tipi
