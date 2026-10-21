@@ -1,0 +1,36 @@
+dataset,descrizione,numero_occorrenze,attributi
+MIMIC,describe patient demographics.,5,ADMISSIONS.INSURANCE | ADMISSIONS.LANGUAGE | ADMISSIONS.RELIGION | ADMISSIONS.MARITAL_STATUS | ADMISSIONS.ETHNICITY
+MIMIC,binary indicator which request certain precautions for the patient in the subsequent ward where they will reside.,5,CALLOUT.REQUEST_TELE | CALLOUT.REQUEST_RESP | CALLOUT.REQUEST_CDIFF | CALLOUT.REQUEST_MRSA | CALLOUT.REQUEST_VRE
+MIMIC,provide information regarding ward reservations.,2,CALLOUT.FIRSTRESERVATIONTIME | CALLOUT.CURRENTRESERVATIONTIME
+MIMIC,is unique to a patient,14,CHARTEVENTS.SUBJECT_ID | CPTEVENTS.SUBJECT_ID | DATETIMEEVENTS.SUBJECT_ID | DRGCODES.SUBJECT_ID | ICUSTAYS.SUBJECT_ID | INPUTEVENTS_CV.SUBJECT_ID | LABEVENTS.SUBJECT_ID | MICROBIOLOGYEVEN.SUBJECT_ID | NOTEEVENTS.SUBJECT_ID | OUTPUTEVENTS.SUBJECT_ID | PRESCRIPTIONS.SUBJECT_ID | PROCEDURES_ICD.SUBJECT_ID | SERVICES.SUBJECT_ID | TRANSFERS.SUBJECT_ID
+MIMIC,is unique to a patient hospital stay,14,CHARTEVENTS.HADM_ID | CPTEVENTS.HADM_ID | DATETIMEEVENTS.HADM_ID | DRGCODES.HADM_ID | ICUSTAYS.HADM_ID | INPUTEVENTS_CV.HADM_ID | LABEVENTS.HADM_ID | MICROBIOLOGYEVEN.HADM_ID | NOTEEVENTS.HADM_ID | OUTPUTEVENTS.HADM_ID | PRESCRIPTIONS.HADM_ID | PROCEDURES_ICD.HADM_ID | SERVICES.HADM_ID | TRANSFERS.HADM_ID
+MIMIC,is unique to a patient icu stay,7,CHARTEVENTS.ICUSTAY_ID | DATETIMEEVENTS.ICUSTAY_ID | ICUSTAYS.ICUSTAY_ID | INPUTEVENTS_CV.ICUSTAY_ID | OUTPUTEVENTS.ICUSTAY_ID | PRESCRIPTIONS.ICUSTAY_ID | TRANSFERS.ICUSTAY_ID
+MIMIC,identifier for a single measurement type in the database,4,CHARTEVENTS.ITEMID | INPUTEVENTS_CV.ITEMID | LABEVENTS.ITEMID | OUTPUTEVENTS.ITEMID
+MIMIC,is the identifier for the caregiver who validated the given measurement,4,CHARTEVENTS.CGID | DATETIMEEVENTS.CGID | INPUTEVENTS_CV.CGID | OUTPUTEVENTS.CGID
+MIMIC,are metavision specific column which specify if a warning for the value was raised and if an error occurred during the measurement,2,CHARTEVENTS.WARNING | CHARTEVENTS.ERROR
+MIMIC,carevue specific column which specify the type of measurement,2,CHARTEVENTS.RESULTSTATUS | CHARTEVENTS.STOPPED
+MIMIC,the section headers provide a category for the given cpt code.,2,CPTEVENTS.SECTIONHEADER | CPTEVENTS.SUBSECTIONHEADER
+MIMIC,is the international coding definitions version 9 (icd-9) code,2,D_ICD_DIAGNOSES.ICD9_CODE | D_ICD_PROCEDURES.ICD9_CODE
+MIMIC,the title field provide a brief definition for the given diagnosis code in icd9_code.,2,D_ICD_DIAGNOSES.SHORT_TITLE | D_ICD_DIAGNOSES.LONG_TITLE
+MIMIC,provides a brief definition for the given procedure code in icd9_code.,2,D_ICD_PROCEDURES.SHORT_TITLE | D_ICD_PROCEDURES.LONG_TITLE
+MIMIC,"records the time at which an observation was charted, and is usually the closest proxy to the time the data was actually measured",3,DATETIMEEVENTS.CHARTTIME | LABEVENTS.CHARTTIME | MICROBIOLOGYEVEN.CHARTTIME
+MIMIC,records the time at which an observation was manually input or manually validated by a member of the clinical staff,3,DATETIMEEVENTS.STORETIME | INPUTEVENTS_CV.STORETIME | OUTPUTEVENTS.STORETIME
+MIMIC,provides additional granularity to drg codes in the ‘apr’ drg type,2,DRGCODES.DRG_SEVERITY | DRGCODES.DRG_MORTALITY
+MIMIC,contains the original icu database the data was sourced from,2,ICUSTAYS.DBSOURCE | TRANSFERS.DBSOURCE
+MIMIC,list the amount of a drug or substance administered to the patient either between the starttime and endtime,2,INPUTEVENTS_CV.AMOUNT | INPUTEVENTS_CV.AMOUNTUOM
+MIMIC,list the rate at which the drug or substance was administered to the patient either between the starttime and endtime,2,INPUTEVENTS_CV.RATE | INPUTEVENTS_CV.RATEUOM
+MIMIC,provides information about the solution the medication was a part of when it was first entered into the information system.,6,INPUTEVENTS_CV.ORIGINALAMOUNT | INPUTEVENTS_CV.ORIGINALAMOUNTUOM | INPUTEVENTS_CV.ORIGINALROUTE | INPUTEVENTS_CV.ORIGINALRATE | INPUTEVENTS_CV.ORIGINALRATEUOM | INPUTEVENTS_CV.ORIGINALSITE
+MIMIC,specimen which is tested for bacterial growth,2,MICROBIOLOGYEVEN.SPEC_ITEMID | MICROBIOLOGYEVEN.SPEC_TYPE_DESC
+MIMIC,"the organism, if any, which grew when tested",2,MICROBIOLOGYEVEN.ORG_ITEMID | MICROBIOLOGYEVEN.ORG_NAME
+MIMIC,"if an antibiotic was tested against the given organism for sensitivity, the name is listed here.",2,MICROBIOLOGYEVEN.AB_ITEMID | MICROBIOLOGYEVEN.AB_NAME
+MIMIC,dilution values when testing antibiotic sensitivity,3,MICROBIOLOGYEVEN.DILUTION_TEXT | MICROBIOLOGYEVEN.DILUTION_COMPARISON | MICROBIOLOGYEVEN.DILUTION_VALUE
+MIMIC,define the type of note recorded,2,NOTEEVENTS.CATEGORY | NOTEEVENTS.DESCRIPTION
+MIMIC,list the amount of a substance at the charttime,2,OUTPUTEVENTS.VALUE | OUTPUTEVENTS.VALUEUOM
+MIMIC,specify the date period for which the prescription was valid,2,PRESCRIPTIONS.STARTDATE | PRESCRIPTIONS.ENDDATE
+MIMIC,these columns are various representations of the drug prescribed to the patient,3,PRESCRIPTIONS.DRUG | PRESCRIPTIONS.DRUG_NAME_POE | PRESCRIPTIONS.DRUG_NAME_GENERIC
+MIMIC,these columns provide a representation of the drug in various coding systems. gsn is the generic sequence number,3,PRESCRIPTIONS.FORMULARY_DRUG_CD | PRESCRIPTIONS.GSN | PRESCRIPTIONS.NDC
+OMOP,"due to the small number of options, this tends to be zero.",3,PERSON.GENDER_SOURCE_CONCEPT_ID | PERSON.RACE_SOURCE_CONCEPT_ID | PERSON.ETHNICITY_SOURCE_CONCEPT_ID
+OMOP,"use this field to determine where the patient was admitted from. this concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example.",2,VISIT_OCCURRENCE.ADMITTED_FROM_CONCEPT_ID | VISIT_DETAIL.ADMITTED_FROM_SOURCE_VALUE
+OMOP,ranges have the same unit as the value_as_number. these ranges are provided by the source and should remain null if not given.,2,MEASUREMENT.RANGE_LOW | MEASUREMENT.RANGE_HIGH
+OMOP,the concept id representing the specific drug ingredient.,2,DRUG_ERA.DRUG_CONCEPT_ID | DOSE_ERA.DRUG_CONCEPT_ID
+OMOP,"reason the concept was invalidated. possible values are d (deleted), u (replaced with an update) or null when valid_end_date has the default value.",2,CONCEPT.INVALID_REASON | DRUG_STRENGTH.INVALID_REASON
