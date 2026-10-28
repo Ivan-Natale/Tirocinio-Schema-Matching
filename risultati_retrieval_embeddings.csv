@@ -1,0 +1,5 @@
+configurazione,totale_ground_truth,recuperate_at_1,recall_at_1,recuperate_at_5,recall_at_5,recuperate_at_10,recall_at_10
+solo_nome,153,5,0.0327,40,0.2614,46,0.3007
+sola_descrizione,153,9,0.0588,22,0.1438,32,0.2092
+nome_descrizione,153,14,0.0915,32,0.2092,50,0.3268
+contesto_tabella,153,10,0.0654,41,0.268,63,0.4118
