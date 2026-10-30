@@ -173,3 +173,26 @@ Il benchmark MIMIC-OMOP è già stato analizzato nelle fasi precedenti.
 Questo esperimento viene quindi considerato esclusivamente esplorativo.
 
 I risultati non verranno utilizzati per modificare retroattivamente le rappresentazioni o ottimizzare parametri sulla stessa ground truth.
+
+## 11. Seconda strategia esplorativa: fusione basata sul miglior rango
+
+Dopo la prima esecuzione con Reciprocal Rank Fusion è stato osservato che RRF può penalizzare candidati che si trovano in una posizione molto alta in una delle due graduatorie ma molto bassa nell'altra.
+
+Per esempio, una corrispondenza può essere classificata al primo posto dalla rappresentazione con contesto della tabella ma essere molto più distante nella graduatoria nome + descrizione. La fusione RRF, premiando soprattutto l'accordo tra le due graduatorie, può far scendere questo candidato fuori dalla top-10.
+
+A partire da questa osservazione ho deciso di sperimentare una seconda strategia di fusione che dia maggiore importanza al metodo che assegna al candidato il rango migliore.
+
+Per ogni target considero:
+
+`best_rank = min(rango_nome_descrizione, rango_contesto_tabella)`
+
+La graduatoria viene quindi ordinata utilizzando:
+
+1. il miglior rango tra le due rappresentazioni;
+2. in caso di parità, il rango ottenuto nell'altra rappresentazione;
+3. in caso di ulteriore parità, la media delle due similarità cosine;
+4. infine, l'identificatore del target in ordine alfabetico.
+
+L'obiettivo è evitare che una corrispondenza molto forte secondo una delle due rappresentazioni venga penalizzata eccessivamente dall'altra.
+
+Questa seconda tecnica viene considerata un'estensione esplorativa post-hoc, perché è stata proposta dopo aver osservato il comportamento della fusione RRF. Non viene quindi presentata come una strategia definita a priori né utilizzata per reinterpretare gli esperimenti precedenti.
