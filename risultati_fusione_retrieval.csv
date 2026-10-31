@@ -1,0 +1,6 @@
+configurazione,hit@1,recall@1,hit@5,recall@5,hit@10,recall@10
+nome_descrizione,14,0.0915,32,0.2092,50,0.3268
+contesto_tabella,10,0.0654,41,0.268,63,0.4118
+senza_contesto,13,0.085,35,0.2288,50,0.3268
+fusione_rrf,11,0.0719,38,0.2484,57,0.3725
+fusione_best_rank,13,0.085,42,0.2745,58,0.3791

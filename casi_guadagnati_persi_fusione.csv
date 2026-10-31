@@ -1,0 +1,31 @@
+source,target_corretto,rango_nome_descrizione,rango_contesto_tabella,rango_senza_contesto,rango_fusione_rrf,rango_fusione_best_rank,top10_nome_descrizione,top10_contesto_tabella,top10_senza_contesto,top10_fusione_rrf,top10_fusione_best_rank,categoria
+ADMISSIONS.ADMISSION_TYPE,VISIT_OCCURRENCE.VISIT_TYPE_CONCEPT_ID,6,32,36,9,10,True,False,False,True,True,RRF_guadagnato_vs_contesto | BEST_guadagnato_vs_contesto
+CAREGIVERS.CGID,PROVIDER.PROVIDER_ID,11,8,8,9,10,False,True,True,True,True,RRF_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_nome_descrizione
+CHARTEVENTS.VALUENUM,MEASUREMENT.VALUE_AS_NUMBER,1,16,1,3,1,True,False,True,True,True,RRF_guadagnato_vs_contesto | BEST_guadagnato_vs_contesto
+CPTEVENTS.SUBJECT_ID,PROCEDURE_OCCURRENCE.PERSON_ID,10,18,25,10,15,True,False,False,True,False,RRF_guadagnato_vs_contesto | BEST_perso_vs_nome_descrizione | BEST_perso_vs_RRF
+D_CPT.SECTIONRANGE,CONCEPT.CONCEPT_CODE,10,67,45,26,15,True,False,False,False,False,RRF_perso_vs_nome_descrizione | BEST_perso_vs_nome_descrizione
+D_ITEMS.LABEL,CONCEPT.CONCEPT_NAME,161,1,5,27,2,False,True,True,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+D_LABITEMS.ITEMID,CONCEPT.CONCEPT_ID,11,6,7,6,7,False,True,True,True,True,RRF_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_nome_descrizione
+D_LABITEMS.LOINC_CODE,CONCEPT.CONCEPT_CODE,3,67,46,12,5,True,False,False,False,True,RRF_perso_vs_nome_descrizione | BEST_guadagnato_vs_contesto | BEST_guadagnato_vs_RRF
+DATETIMEEVENTS.CGID,OBSERVATION.PROVIDER_ID,8,72,14,20,14,True,False,False,False,False,RRF_perso_vs_nome_descrizione | BEST_perso_vs_nome_descrizione
+DATETIMEEVENTS.VALUE,OBSERVATION.VALUE_AS_DATETIME,38,12,31,2,23,False,False,False,True,False,RRF_guadagnato_vs_nome_descrizione | RRF_guadagnato_vs_contesto | BEST_perso_vs_RRF
+ICUSTAYS.SUBJECT_ID,VISIT_DETAIL.PERSON_ID,31,9,14,14,13,False,True,False,False,False,RRF_perso_vs_contesto | BEST_perso_vs_contesto
+INPUTEVENTS_CV.AMOUNT,DRUG_EXPOSURE.QUANTITY,89,9,34,30,15,False,True,False,False,False,RRF_perso_vs_contesto | BEST_perso_vs_contesto
+INPUTEVENTS_CV.AMOUNTUOM,DRUG_EXPOSURE.DOSE_UNIT_SOURCE_VALUE,13,5,8,5,8,False,True,True,True,True,RRF_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_nome_descrizione
+LABEVENTS.ITEMID,MEASUREMENT.MEASUREMENT_CONCEPT_ID,12,8,14,7,12,False,True,False,True,False,RRF_guadagnato_vs_nome_descrizione | BEST_perso_vs_contesto | BEST_perso_vs_RRF
+MICROBIOLOGYEVEN.SUBJECT_ID,SPECIMEN.PERSON_ID,59,9,35,18,15,False,True,False,False,False,RRF_perso_vs_contesto | BEST_perso_vs_contesto
+MICROBIOLOGYEVEN.CHARTDATE,SPECIMEN.SPECIMEN_DATE,28,2,33,7,3,False,True,False,True,True,RRF_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_nome_descrizione
+MICROBIOLOGYEVEN.SPEC_ITEMID,SPECIMEN.SPECIMEN_TYPE_CONCEPT_ID,8,10,9,8,11,True,True,True,True,False,BEST_perso_vs_nome_descrizione | BEST_perso_vs_contesto | BEST_perso_vs_RRF
+NOTEEVENTS.SUBJECT_ID,NOTE.PERSON_ID,29,5,10,12,7,False,True,True,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+OUTPUTEVENTS.VALUE,MEASUREMENT.VALUE_AS_NUMBER,10,11,8,8,18,True,False,True,True,False,RRF_guadagnato_vs_contesto | BEST_perso_vs_nome_descrizione | BEST_perso_vs_RRF
+PRESCRIPTIONS.SUBJECT_ID,DRUG_EXPOSURE.PERSON_ID,23,10,38,10,15,False,True,False,True,False,RRF_guadagnato_vs_nome_descrizione | BEST_perso_vs_contesto | BEST_perso_vs_RRF
+PRESCRIPTIONS.DRUG,DRUG_EXPOSURE.DRUG_SOURCE_VALUE,12,12,11,9,15,False,False,False,True,False,RRF_guadagnato_vs_nome_descrizione | RRF_guadagnato_vs_contesto | BEST_perso_vs_RRF
+PROCEDUREEVENTS_MV.SUBJECT_ID,PROCEDURE_OCCURRENCE.PERSON_ID,51,2,60,11,3,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDUREEVENTS_MV.HADM_ID,PROCEDURE_OCCURRENCE.VISIT_OCCURRENCE_ID,66,4,101,17,8,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDUREEVENTS_MV.STARTTIME,PROCEDURE_OCCURRENCE.PROCEDURE_DATETIME,30,3,21,11,4,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDUREEVENTS_MV.ITEMID,PROCEDURE_OCCURRENCE.PROCEDURE_CONCEPT_ID,202,10,178,41,19,False,True,False,False,False,RRF_perso_vs_contesto | BEST_perso_vs_contesto
+PROCEDUREEVENTS_MV.VALUE,PROCEDURE_OCCURRENCE.PROCEDURE_SOURCE_VALUE,82,2,61,12,4,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDUREEVENTS_MV.CGID,PROCEDURE_OCCURRENCE.PROVIDER_ID,52,6,127,7,11,False,True,False,True,False,RRF_guadagnato_vs_nome_descrizione | BEST_perso_vs_contesto | BEST_perso_vs_RRF
+PROCEDUREEVENTS_MV.ORDERCATEGORYNAME,PROCEDURE_OCCURRENCE.MODIFIER_SOURCE_VALUE,383,2,218,42,4,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDURES_ICD.HADM_ID,PROCEDURE_OCCURRENCE.VISIT_OCCURRENCE_ID,37,6,30,17,9,False,True,False,False,True,RRF_perso_vs_contesto | BEST_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_RRF
+PROCEDURES_ICD.ICD9_CODE,PROCEDURE_OCCURRENCE.PROCEDURE_SOURCE_VALUE,19,5,5,9,8,False,True,True,True,True,RRF_guadagnato_vs_nome_descrizione | BEST_guadagnato_vs_nome_descrizione
